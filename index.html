@@ -529,19 +529,67 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      background-color: #000;
+      background-color: #000000;
+      min-height: 280px;
     }
 
     #reader {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100% !important;
       height: 100% !important;
       border: none !important;
+      overflow: hidden;
     }
 
     #reader video {
       width: 100% !important;
       height: 100% !important;
       object-fit: cover !important;
+    }
+
+    /* LOADING & ERROR OVERLAYS DI DALAM AREA KAMERA */
+    .scanner-loading-overlay,
+    .scanner-error-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(15, 23, 42, 0.94);
+      z-index: 15;
+      padding: 24px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .scanner-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    .btn-retry-camera {
+      margin-top: 14px;
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-retry-camera:active {
+      background-color: #1d4ed8;
     }
 
     /* Reticle / Bingkai Pemindai (Dinamis 1D vs 2D) */
@@ -552,6 +600,7 @@
       pointer-events: none;
       box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.52);
       transition: width 0.25s ease, height 0.25s ease;
+      z-index: 5;
     }
 
     /* Mode 1D Barcode Batang (Lebar Horizontal) */
@@ -937,7 +986,27 @@
     </div>
     
     <div class="scanner-body">
+      <!-- Container Kamera html5-qrcode -->
       <div id="reader"></div>
+
+      <!-- Loading Overlay saat kamera menginisialisasi -->
+      <div id="scannerLoadingOverlay" class="scanner-loading-overlay">
+        <div class="scanner-spinner"></div>
+        <div style="font-weight: 600; font-size: 0.95rem;">Menghubungkan Kamera...</div>
+        <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">Mohon izinkan akses kamera pada browser Anda</div>
+      </div>
+
+      <!-- Error Overlay jika kamera ditolak / gagal -->
+      <div id="scannerErrorOverlay" class="scanner-error-overlay" style="display: none;">
+        <div style="font-size: 2.2rem; margin-bottom: 6px;">📷⚠️</div>
+        <div style="font-weight: 600; font-size: 0.95rem; color: #f87171;">Kamera Tidak Dapat Diakses</div>
+        <div id="scannerErrorDesc" style="font-size: 0.78rem; color: #cbd5e1; margin-top: 6px; max-width: 280px; line-height: 1.4;">
+          Periksa izin kamera di setelan browser, atau gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.
+        </div>
+        <button type="button" class="btn-retry-camera" id="btnRetryCamera">🔄 Coba Lagi</button>
+      </div>
+
+      <!-- Bingkai pemindai (reticle) dan garis laser merah -->
       <div class="scanner-reticle reticle-1d" id="scannerReticle">
         <div class="scanner-laser"></div>
       </div>
@@ -1629,6 +1698,27 @@
       startLiveScanner();
     }
 
+    function showScannerLoading(show) {
+      const el = document.getElementById("scannerLoadingOverlay");
+      if (el) el.style.display = show ? "flex" : "none";
+    }
+
+    function showScannerError(msg) {
+      const el = document.getElementById("scannerErrorOverlay");
+      const descEl = document.getElementById("scannerErrorDesc");
+      if (descEl && msg) {
+        descEl.innerHTML = `Penyebab: <em>${escapeHtml(String(msg))}</em><br><br>Pastikan izin kamera diizinkan di setelan browser, atau gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.`;
+      }
+      if (el) el.style.display = "flex";
+      if (scannerReticle) scannerReticle.style.display = "none";
+    }
+
+    function hideScannerError() {
+      const el = document.getElementById("scannerErrorOverlay");
+      if (el) el.style.display = "none";
+      if (scannerReticle) scannerReticle.style.display = "block";
+    }
+
     function createHtml5QrcodeInstance() {
       // Format yang didukung: Code 128, Code 39, QR, EAN, ITF, Data Matrix, Codabar
       const formats = [
@@ -1644,61 +1734,94 @@
 
       return new Html5Qrcode("reader", {
         formatsToSupport: formats,
-        verbose: false,
-        useBarCodeDetectorIfSupported: true,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true
-        }
+        verbose: false
       });
     }
 
-    function startLiveScanner() {
+    async function startLiveScanner() {
       if (typeof Html5Qrcode === "undefined") {
-        handleCameraFailure("Library pemindai belum siap.");
+        handleCameraFailure("Library pemindai belum siap dimuat.");
         return;
       }
+
+      showScannerLoading(true);
+      hideScannerError();
+
+      // Hentikan dan bersihkan instance lama jika ada
+      if (html5QrCodeScanner) {
+        try {
+          if (html5QrCodeScanner.isScanning) {
+            await html5QrCodeScanner.stop();
+          }
+          html5QrCodeScanner.clear();
+        } catch (e) {}
+        html5QrCodeScanner = null;
+      }
+
+      const readerEl = document.getElementById("reader");
+      if (readerEl) readerEl.innerHTML = "";
 
       html5QrCodeScanner = createHtml5QrcodeInstance();
 
       // Kotak pemindai dinamis dan luas agar barcode batang panjang tidak terpotong
       const qrConfig = {
-        fps: 25,
+        fps: 20,
         qrbox: function(viewfinderWidth, viewfinderHeight) {
-          // Kotak lebar horizontal (94% lebar layar, tinggi hingga 220px)
-          const w = Math.floor(Math.min(viewfinderWidth * 0.94, 460));
-          const h = Math.floor(Math.min(viewfinderHeight * 0.40, 220));
+          const vw = viewfinderWidth || 320;
+          const vh = viewfinderHeight || 240;
+          const w = Math.max(Math.floor(Math.min(vw * 0.92, 460)), 220);
+          const h = Math.max(Math.floor(Math.min(vh * 0.45, 220)), 140);
           return { width: w, height: h };
         }
       };
 
-      // Konfigurasi kamera High-Definition 1080p/720p dengan auto-focus berkelanjutan
-      const videoConfig = {
-        facingMode: "environment",
-        focusMode: "continuous",
-        width: { min: 1280, ideal: 1920 },
-        height: { min: 720, ideal: 1080 }
-      };
+      // Tentukan target kamera yang tepat (HP vs Laptop)
+      let cameraConfig = { facingMode: "environment" };
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          const backCam = devices.find(d => /back|rear|environment|belakang/i.test(d.label));
+          if (backCam) {
+            cameraConfig = backCam.id;
+          } else {
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            cameraConfig = isMobile ? { facingMode: "environment" } : devices[0].id;
+          }
+        }
+      } catch (camErr) {
+        cameraConfig = { facingMode: "environment" };
+      }
 
-      html5QrCodeScanner.start(
-        videoConfig,
-        qrConfig,
-        onScanSuccess,
-        onScanProgress
-      ).then(function() {
-        checkTorchSupport();
-      }).catch(function(err) {
-        // Fallback jika videoConfig resolusi tinggi ditolak perangkat tertentu
-        html5QrCodeScanner.start(
-          { facingMode: "environment" },
+      try {
+        await html5QrCodeScanner.start(
+          cameraConfig,
           qrConfig,
           onScanSuccess,
           onScanProgress
-        ).then(function() {
-          checkTorchSupport();
-        }).catch(function(fallbackErr) {
-          handleCameraFailure("Izin kamera ditolak atau tidak tersedia: " + fallbackErr);
-        });
-      });
+        );
+        showScannerLoading(false);
+        checkTorchSupport();
+      } catch (err) {
+        console.warn("Gagal kamera belakang/spesifik, mencoba fallback:", err);
+        try {
+          if (html5QrCodeScanner) {
+            try { html5QrCodeScanner.clear(); } catch (e) {}
+            html5QrCodeScanner = null;
+          }
+          if (readerEl) readerEl.innerHTML = "";
+          html5QrCodeScanner = createHtml5QrcodeInstance();
+          await html5QrCodeScanner.start(
+            { facingMode: "user" },
+            qrConfig,
+            onScanSuccess,
+            onScanProgress
+          );
+          showScannerLoading(false);
+        } catch (fallbackErr) {
+          console.error("Gagal start semua kamera:", fallbackErr);
+          handleCameraFailure(fallbackErr.message || fallbackErr);
+        }
+      }
     }
 
     function onScanSuccess(decodedText) {
@@ -1735,8 +1858,10 @@
     function onScanProgress() {}
 
     function handleCameraFailure(msg) {
+      showScannerLoading(false);
+      showScannerError(msg);
       scannerTipCard.innerHTML = 
-        `<span style="color:#f87171;">Akses kamera live tidak dapat dimulai.</span><br>Gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.`;
+        `<span style="color:#f87171;">⚠️ Akses kamera live tidak dapat dimulai.</span><br>Gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.`;
     }
 
     function checkTorchSupport() {
@@ -1863,28 +1988,32 @@
       });
     }
 
-    function closeScannerModal() {
+    async function closeScannerModal() {
+      showScannerLoading(false);
+      hideScannerError();
       if (html5QrCodeScanner) {
         try {
           if (html5QrCodeScanner.isScanning) {
-            html5QrCodeScanner.stop().then(function() {
-              html5QrCodeScanner.clear();
-              html5QrCodeScanner = null;
-            }).catch(function() {
-              html5QrCodeScanner = null;
-            });
-          } else {
-            html5QrCodeScanner.clear();
-            html5QrCodeScanner = null;
+            await html5QrCodeScanner.stop();
           }
-        } catch (e) {
-          html5QrCodeScanner = null;
-        }
+          html5QrCodeScanner.clear();
+        } catch (e) {}
+        html5QrCodeScanner = null;
       }
+      const readerEl = document.getElementById("reader");
+      if (readerEl) readerEl.innerHTML = "";
+
       isTorchOn = false;
       btnToggleTorch.style.display = "none";
       scannerModal.style.display = "none";
       currentScanTarget = null;
+    }
+
+    const btnRetryCamera = document.getElementById("btnRetryCamera");
+    if (btnRetryCamera) {
+      btnRetryCamera.addEventListener("click", function() {
+        startLiveScanner();
+      });
     }
 
     // =========================================================================
