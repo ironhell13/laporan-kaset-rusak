@@ -1632,26 +1632,12 @@
         nomorKaset: inputNomorKaset.value.trim().toUpperCase(),
         sn: normalizeSN(inputSn.value),
         module: selectModule.value.trim(),
-        typeMesin: selectTypeMesin.value.trim()
+        typeMesin: selectTypeMesin.value.trim(),
+        allowDuplicate: false
       };
 
       setSubmitLoading(true);
-
-      try {
-        const res = await apiRequest("check-duplicate", { nomorKaset: payload.nomorKaset }, "checkDuplicate");
-
-        if (res && res.isDuplicate && res.duplicateInfo) {
-          setSubmitLoading(false);
-          pendingPayload = payload;
-          showDuplicateModal(res.duplicateInfo);
-        } else {
-          await executeSave(payload);
-        }
-      } catch (err) {
-        // Jika cek duplikat gagal jaringan, langsung coba simpan
-        console.warn("Cek duplikat error, langsung simpan:", err);
-        await executeSave(payload);
-      }
+      await executeSave(payload);
     });
 
     function showDuplicateModal(info) {
@@ -1670,8 +1656,9 @@
       duplicateModal.style.display = "none";
       if (pendingPayload) {
         setSubmitLoading(true);
-        await executeSave(pendingPayload);
+        const forcePayload = Object.assign({}, pendingPayload, { allowDuplicate: true });
         pendingPayload = null;
+        await executeSave(forcePayload);
       }
     });
 
@@ -1679,6 +1666,12 @@
       try {
         const response = await apiRequest("save-report", { payload: payload }, "saveReport");
         setSubmitLoading(false);
+
+        if (response && response.isDuplicate && response.duplicateInfo) {
+          pendingPayload = payload;
+          showDuplicateModal(response.duplicateInfo);
+          return;
+        }
 
         if (response && response.success) {
           handleSaveSuccess(payload, response.data);

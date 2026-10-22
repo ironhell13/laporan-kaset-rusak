@@ -25,7 +25,7 @@ export async function callGas(action, payload, customGasUrl) {
   };
 
   let lastError = null;
-  const maxAttempts = 3;
+  const maxAttempts = 5;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -48,8 +48,8 @@ export async function callGas(action, payload, customGasUrl) {
 
       // Jika script mengembalikan pesan antrian/lock sibuk, tunggu jeda singkat dan coba kembali
       if (parsed && !parsed.success && parsed.message && /sibuk|busy|lock|antrian/i.test(parsed.message) && attempt < maxAttempts) {
-        const jitter = Math.floor(Math.random() * 200);
-        await new Promise(r => setTimeout(r, (350 * attempt) + jitter));
+        const jitter = Math.floor(Math.random() * 300);
+        await new Promise(r => setTimeout(r, (300 * attempt) + jitter));
         continue;
       }
 
@@ -58,8 +58,8 @@ export async function callGas(action, payload, customGasUrl) {
     } catch (err) {
       lastError = err;
       if (attempt < maxAttempts) {
-        const jitter = Math.floor(Math.random() * 200);
-        await new Promise(r => setTimeout(r, (350 * attempt) + jitter));
+        const jitter = Math.floor(Math.random() * 300);
+        await new Promise(r => setTimeout(r, (300 * attempt) + jitter));
       }
     }
   }

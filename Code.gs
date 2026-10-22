@@ -354,6 +354,7 @@ function saveReport(payload) {
   var normalizedSN = normalizeSN(rawSN);
   var moduleVal = String(payload.module !== null && payload.module !== undefined ? payload.module : "").trim();
   var typeMesin = String(payload.typeMesin || "").trim();
+  var allowDuplicate = !!payload.allowDuplicate;
 
   if (!wsid || !nomorKaset || !normalizedSN || !moduleVal || !typeMesin) {
     return { success: false, message: "Semua kolom wajib diisi (WSID, Lokasi, Nomor Kaset, S/N, Module, Type Mesin)." };
@@ -376,40 +377,68 @@ function saveReport(payload) {
     sanitizeInput(typeMesin)
   ]];
 
-  var formats = [["@", "@", CONFIG.DATE_NUMBER_FORMAT, "@", "@", "@", "@"]];
+  // 2. Dapatkan referensi Spreadsheet di luar lock (menghemat 300ms antrian lock)
+  var ss = getSpreadsheet();
+  var reportSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+  if (!reportSheet) {
+    return {
+      success: false,
+      message: "Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan."
+    };
+  }
 
-  // 2. Dapatkan ScriptLock untuk penulisan atomik tanpa tabrakan baris
+  // 3. Dapatkan ScriptLock atomik dengan timeout 25 detik (mendukung 50+ user)
   var lock = LockService.getScriptLock();
   var lockAcquired = false;
 
   try {
-    lockAcquired = lock.tryLock(30000);
+    lockAcquired = lock.tryLock(25000);
     if (!lockAcquired) {
       return {
         success: false,
-        message: "Sistem sedang sibuk melayani antrian. Silakan coba submit kembali."
+        message: "Sistem sedang melayani antrian penulisan. Silakan klik Simpan kembali."
       };
     }
 
-    var ss = getSpreadsheet();
-    var reportSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
-    if (!reportSheet) {
-      return {
-        success: false,
-        message: "Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan."
-      };
-    }
-
-    // Cari baris kosong berikutnya hanya dengan membaca Kolom A (sangat cepat ~10ms)
+    // 4. Cari baris kosong & periksa duplikasi dalam 1 kali pembacaan range saja
     var lastRow = reportSheet.getLastRow();
     var targetRow = CONFIG.FIRST_DATA_ROW;
 
     if (lastRow >= CONFIG.FIRST_DATA_ROW) {
       var numToCheck = lastRow - CONFIG.FIRST_DATA_ROW + 1;
-      var colA = reportSheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numToCheck, 1).getValues();
+      // Baca Kolom 1-4 (WSID, Lokasi, Tanggal, Nomor Kaset)
+      var dataCols = reportSheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numToCheck, 4).getValues();
+
+      // Cek duplikasi nomor kaset jika belum disetujui pengguna
+      if (!allowDuplicate) {
+        for (var i = dataCols.length - 1; i >= 0; i--) {
+          var exKaset = String(dataCols[i][3] || "").trim().toUpperCase();
+          if (exKaset === nomorKaset) {
+            var rawDate = dataCols[i][2];
+            var exDate = (rawDate instanceof Date) ? formatIndonesianDate(rawDate) : String(rawDate || "-");
+
+            // Lepas lock secepatnya sebelum return agar antrian user lain langsung jalan
+            lock.releaseLock();
+            lockAcquired = false;
+
+            return {
+              success: false,
+              isDuplicate: true,
+              duplicateInfo: {
+                nomorKaset: nomorKaset,
+                wsid: String(dataCols[i][0] || "-"),
+                lokasi: String(dataCols[i][1] || "-"),
+                tanggal: exDate
+              }
+            };
+          }
+        }
+      }
+
+      // Hitung baris target dari Kolom A yang sudah terisi
       var lastFilledOffset = -1;
-      for (var r = colA.length - 1; r >= 0; r--) {
-        if (colA[r][0] !== "" && colA[r][0] !== null && colA[r][0] !== undefined) {
+      for (var r = dataCols.length - 1; r >= 0; r--) {
+        if (dataCols[r][0] !== "" && dataCols[r][0] !== null && dataCols[r][0] !== undefined) {
           lastFilledOffset = r;
           break;
         }
@@ -419,17 +448,14 @@ function saveReport(payload) {
         : (CONFIG.FIRST_DATA_ROW + lastFilledOffset + 1);
     }
 
-    if (targetRow > reportSheet.getMaxRows()) {
-      reportSheet.insertRowsAfter(reportSheet.getMaxRows(), 10);
-    }
-
-    // Tulis ke kolom A-G (Cols 1-7)
+    // 5. Tulis langsung ke kolom A-G
     var targetRange = reportSheet.getRange(targetRow, 1, 1, 7);
-    targetRange.setNumberFormats(formats);
     targetRange.setValues(rowData);
+    reportSheet.getRange(targetRow, 3).setNumberFormat(CONFIG.DATE_NUMBER_FORMAT);
 
-    // Pastikan tersimpan segera
-    SpreadsheetApp.flush();
+    // Lepas lock secepatnya setelah penulisan selesai
+    lock.releaseLock();
+    lockAcquired = false;
 
     return {
       success: true,
