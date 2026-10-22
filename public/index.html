@@ -463,19 +463,52 @@
     }
 
     .scanner-header {
-      padding: 16px;
+      padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       color: #ffffff;
-      background-color: rgba(15, 23, 42, 0.85);
+      background-color: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(8px);
       z-index: 10;
+    }
+
+    .scanner-title-area {
+      display: flex;
+      flex-direction: column;
     }
 
     .scanner-title {
       font-size: 1rem;
       font-weight: 600;
+    }
+
+    /* MODE TOGGLE SWITCH (1D BATANG vs 2D QR) */
+    .mode-switch-group {
+      display: inline-flex;
+      background-color: #1e293b;
+      border-radius: 8px;
+      padding: 2px;
+      margin-top: 4px;
+      border: 1px solid #334155;
+    }
+
+    .btn-mode-toggle {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-mode-toggle.active {
+      background-color: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
 
     .btn-close-scanner {
@@ -511,38 +544,49 @@
       object-fit: cover !important;
     }
 
-    /* Reticle / Bingkai Pemindai */
+    /* Reticle / Bingkai Pemindai (Dinamis 1D vs 2D) */
     .scanner-reticle {
       position: absolute;
-      width: 260px;
-      height: 260px;
-      border: 2px solid rgba(255, 255, 255, 0.7);
-      border-radius: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      border-radius: 14px;
       pointer-events: none;
-      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.52);
+      transition: width 0.25s ease, height 0.25s ease;
     }
 
-    .scanner-reticle::before {
-      content: "";
+    /* Mode 1D Barcode Batang (Lebar Horizontal) */
+    .reticle-1d {
+      width: min(88vw, 360px);
+      height: 170px;
+    }
+
+    /* Mode 2D QR Code (Kotak Persegi) */
+    .reticle-2d {
+      width: min(75vw, 260px);
+      height: min(75vw, 260px);
+    }
+
+    /* Garis Laser Merah Pemindai */
+    .scanner-laser {
       position: absolute;
-      top: 0;
+      top: 50%;
       left: 0;
       width: 100%;
-      height: 2px;
-      background: #38bdf8;
-      box-shadow: 0 0 8px #38bdf8;
-      animation: scanBeam 2s infinite ease-in-out;
+      height: 2.5px;
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444, 0 0 4px #ffffff;
+      animation: scanLaser 1.8s infinite ease-in-out;
     }
 
-    @keyframes scanBeam {
-      0% { top: 5%; }
-      50% { top: 95%; }
-      100% { top: 5%; }
+    @keyframes scanLaser {
+      0% { top: 8%; opacity: 0.9; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 8%; opacity: 0.9; }
     }
 
     .scanner-footer {
-      padding: 16px;
-      background-color: rgba(15, 23, 42, 0.9);
+      padding: 14px 16px;
+      background-color: rgba(15, 23, 42, 0.95);
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -560,8 +604,8 @@
       color: #ffffff;
       border: 1px solid #475569;
       border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 0.88rem;
+      padding: 10px 14px;
+      font-size: 0.84rem;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
@@ -573,10 +617,20 @@
       background-color: #475569;
     }
 
-    .scanner-msg {
-      color: #94a3b8;
-      font-size: 0.8rem;
+    /* TIPS ORIENTASI KHUSUS 1D */
+    .scanner-tip-card {
+      background-color: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      line-height: 1.4;
       text-align: center;
+    }
+
+    .scanner-tip-card strong {
+      color: #38bdf8;
     }
 
     /* MODAL DUPLIKAT & SETTINGS */
@@ -866,7 +920,14 @@
   <!-- MODAL FULL-SCREEN SCANNER -->
   <div id="scannerModal" class="scanner-modal">
     <div class="scanner-header">
-      <div class="scanner-title" id="scannerModalTitle">Scan Barcode</div>
+      <div class="scanner-title-area">
+        <div class="scanner-title" id="scannerModalTitle">Scan Barcode</div>
+        <!-- Pilihan Mode 1D Batang vs 2D QR -->
+        <div class="mode-switch-group">
+          <button type="button" class="btn-mode-toggle active" id="btnMode1D">📏 Barcode Batang (1D)</button>
+          <button type="button" class="btn-mode-toggle" id="btnMode2D">🔲 QR Code (2D)</button>
+        </div>
+      </div>
       <button type="button" class="btn-close-scanner" id="btnCloseScanner">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -877,7 +938,9 @@
     
     <div class="scanner-body">
       <div id="reader"></div>
-      <div class="scanner-reticle"></div>
+      <div class="scanner-reticle reticle-1d" id="scannerReticle">
+        <div class="scanner-laser"></div>
+      </div>
     </div>
 
     <div class="scanner-footer">
@@ -897,8 +960,10 @@
           Ambil Foto Barcode
         </button>
       </div>
-      <div class="scanner-msg" id="scannerHint">
-        Arahkan kamera ke barcode / QR code kaset
+
+      <!-- PETUNJUK ORIENTASI SCANNER -->
+      <div class="scanner-tip-card" id="scannerTipCard">
+        💡 <strong>Tips Barcode Batang:</strong> Arahkan garis laser merah <strong>memotong tegak lurus semua garis barcode</strong>.<br>Jika garis barcode kaset horizontal/tegak, <strong>miringkan HP Anda 90°</strong>.
       </div>
     </div>
   </div>
@@ -967,6 +1032,7 @@
     let sessionHistory = [];
     let html5QrCodeScanner = null;
     let currentScanTarget = null;
+    let currentScanMode = "1d"; // '1d' (barcode batang) | '2d' (QR code)
     let isTorchOn = false;
     let pendingPayload = null;
 
@@ -989,13 +1055,16 @@
     // Scanner DOM
     const scannerModal = document.getElementById("scannerModal");
     const scannerTitle = document.getElementById("scannerModalTitle");
+    const scannerReticle = document.getElementById("scannerReticle");
+    const btnMode1D = document.getElementById("btnMode1D");
+    const btnMode2D = document.getElementById("btnMode2D");
     const btnCloseScanner = document.getElementById("btnCloseScanner");
     const btnScanKaset = document.getElementById("btnScanKaset");
     const btnScanSN = document.getElementById("btnScanSN");
     const btnToggleTorch = document.getElementById("btnToggleTorch");
     const btnTriggerFile = document.getElementById("btnTriggerFile");
     const fileInput = document.getElementById("fileInput");
-    const scannerHint = document.getElementById("scannerHint");
+    const scannerTipCard = document.getElementById("scannerTipCard");
 
     // Modal Duplikat DOM
     const duplicateModal = document.getElementById("duplicateModal");
@@ -1064,23 +1133,19 @@
 
         const res = await fetch(url, fetchOptions);
 
-        // Jika endpoint /api/ tersedia di Vercel
         if (res.ok) {
           const json = await res.json();
-          // Jika backend Vercel mengabarkan bahwa GAS_URL belum diatur
           if (json && json.message && json.message.includes("GAS_URL belum disetel")) {
             showGasUrlPrompt();
           }
           return json;
         } else if (res.status === 404 && customUrl) {
-          // Fallback: Jika dibuka sebagai static HTML murni tanpa Vercel API, panggil langsung customUrl
           return directGasCall(customUrl, actionName, payload);
         } else {
           const errText = await res.text();
           throw new Error(`API Error ${res.status}: ${errText.slice(0, 100)}`);
         }
       } catch (err) {
-        // Jika offline atau gagal connect ke Vercel API, coba direct GAS jika ada customUrl
         if (customUrl) {
           return directGasCall(customUrl, actionName, payload);
         }
@@ -1088,7 +1153,6 @@
       }
     }
 
-    // Direct fetch ke Apps Script Web App (POST dengan text/plain mencegah CORS preflight block)
     async function directGasCall(gasUrl, action, payload) {
       const body = {
         action: action,
@@ -1215,7 +1279,6 @@
     // INISIALISASI DATA DARI SPREADSHEET
     // =========================================================================
     window.addEventListener("DOMContentLoaded", function() {
-      // Pulihkan WSID dan Type Mesin dari localStorage jika ada
       const savedWsid = localStorage.getItem("LAST_WSID");
       if (savedWsid) inputWsid.value = savedWsid;
 
@@ -1296,7 +1359,6 @@
     function validateClientForm() {
       let isValid = true;
 
-      // 1. WSID
       const wsid = inputWsid.value.trim().toUpperCase();
       if (!wsid || !/^[A-Z0-9]{3,10}$/.test(wsid)) {
         setFieldError("wsid", true);
@@ -1305,7 +1367,6 @@
         setFieldError("wsid", false);
       }
 
-      // 2. Nomor Kaset
       const nomorKaset = inputNomorKaset.value.trim();
       if (!nomorKaset) {
         setFieldError("nomorKaset", true);
@@ -1314,7 +1375,6 @@
         setFieldError("nomorKaset", false);
       }
 
-      // 3. S/N
       const snVal = normalizeSN(inputSn.value);
       inputSn.value = snVal;
       if (!snVal) {
@@ -1324,7 +1384,6 @@
         setFieldError("sn", false);
       }
 
-      // 4. Module
       const modVal = selectModule.value;
       if (!modVal || parseInt(modVal, 10) < 1 || parseInt(modVal, 10) > 6) {
         setFieldError("module", true);
@@ -1333,7 +1392,6 @@
         setFieldError("module", false);
       }
 
-      // 5. Type Mesin
       const typeVal = selectTypeMesin.value;
       if (!typeVal) {
         setFieldError("typeMesin", true);
@@ -1367,7 +1425,6 @@
       setSubmitLoading(true);
 
       try {
-        // Cek duplikat terlebih dahulu
         const res = await apiRequest("check-duplicate", { nomorKaset: payload.nomorKaset }, "checkDuplicate");
 
         if (res && res.isDuplicate && res.duplicateInfo) {
@@ -1422,11 +1479,9 @@
     }
 
     function handleSaveSuccess(payload, resultData) {
-      // 1. Tampilkan notifikasi hijau
       const summary = `${payload.wsid} | ${payload.nomorKaset} | ${payload.sn} | Mod ${payload.module} | ${payload.typeMesin}`;
       showToast("Laporan Tersimpan", summary, "success");
 
-      // 2. Tambah ke Riwayat Sesi Ini
       const now = new Date();
       const timeStr = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
       addToSessionHistory({
@@ -1438,11 +1493,9 @@
         jam: timeStr
       });
 
-      // 3. Simpan preferensi WSID dan Type Mesin untuk kenyamanan user
       localStorage.setItem("LAST_WSID", payload.wsid);
       localStorage.setItem("LAST_TYPE_MESIN", payload.typeMesin);
 
-      // 4. Reset form: PERTAHANKAN WSID dan Type Mesin, kosongkan Nomor Kaset, S/N, Module
       inputNomorKaset.value = "";
       inputSn.value = "";
       selectModule.value = "";
@@ -1452,7 +1505,6 @@
       clearFieldError("sn");
       clearFieldError("module");
 
-      // 5. Fokus kembali ke Nomor Kaset
       inputNomorKaset.focus();
     }
 
@@ -1529,27 +1581,75 @@
     }
 
     // =========================================================================
-    // FITUR SCANNER 3-LAPIS (NATIVE KAMERA VERCEL HTTPS)
+    // FITUR SCANNER CANGGIH 1D & 2D (HD VIDEO, HARDWARE ACCEL, ROTASI AUTO)
     // =========================================================================
     btnScanKaset.addEventListener("click", function() {
-      openScannerModal("nomorKaset", "Scan Nomor Kaset");
+      openScannerModal("nomorKaset", "Scan Nomor Kaset", "1d");
     });
 
     btnScanSN.addEventListener("click", function() {
-      openScannerModal("sn", "Scan S/N Kaset");
+      // Default ke 1D untuk S/N kaset
+      openScannerModal("sn", "Scan S/N Kaset", "1d");
     });
 
     btnCloseScanner.addEventListener("click", function() {
       closeScannerModal();
     });
 
-    function openScannerModal(targetField, titleText) {
+    // Toggle Mode Pemindai 1D vs 2D
+    btnMode1D.addEventListener("click", function() {
+      setScannerMode("1d");
+    });
+
+    btnMode2D.addEventListener("click", function() {
+      setScannerMode("2d");
+    });
+
+    function setScannerMode(mode) {
+      currentScanMode = mode;
+      if (mode === "1d") {
+        btnMode1D.classList.add("active");
+        btnMode2D.classList.remove("active");
+        scannerReticle.className = "scanner-reticle reticle-1d";
+        scannerTipCard.innerHTML = `💡 <strong>Tips Barcode Batang (1D):</strong> Arahkan garis laser merah <strong>tegak lurus memotong semua garis barcode</strong>.<br>Jika garis barcode kaset horizontal, <strong>miringkan HP Anda 90°</strong>.`;
+      } else {
+        btnMode2D.classList.add("active");
+        btnMode1D.classList.remove("active");
+        scannerReticle.className = "scanner-reticle reticle-2d";
+        scannerTipCard.innerHTML = `💡 <strong>Tips QR Code (2D):</strong> Posisikan kotak QR code stiker di dalam bingkai pemindai.`;
+      }
+    }
+
+    function openScannerModal(targetField, titleText, initialMode) {
       currentScanTarget = targetField;
       scannerTitle.textContent = titleText;
       scannerModal.style.display = "flex";
-      scannerHint.textContent = "Mengaktifkan kamera...";
+      setScannerMode(initialMode || "1d");
 
       startLiveScanner();
+    }
+
+    function createHtml5QrcodeInstance() {
+      // Format yang didukung: Code 128, Code 39, QR, EAN, ITF, Data Matrix, Codabar
+      const formats = [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.CODABAR
+      ];
+
+      return new Html5Qrcode("reader", {
+        formatsToSupport: formats,
+        verbose: false,
+        useBarCodeDetectorIfSupported: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
+      });
     }
 
     function startLiveScanner() {
@@ -1558,36 +1658,46 @@
         return;
       }
 
-      const formats = [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.CODABAR,
-        Html5QrcodeSupportedFormats.DATA_MATRIX
-      ];
+      html5QrCodeScanner = createHtml5QrcodeInstance();
 
-      html5QrCodeScanner = new Html5Qrcode("reader", { formatsToSupport: formats, verbose: false });
-
+      // Kotak pemindai dinamis dan luas agar barcode batang panjang tidak terpotong
       const qrConfig = {
-        fps: 20,
-        qrbox: { width: 260, height: 260 },
-        aspectRatio: 1.0
+        fps: 25,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          // Kotak lebar horizontal (94% lebar layar, tinggi hingga 220px)
+          const w = Math.floor(Math.min(viewfinderWidth * 0.94, 460));
+          const h = Math.floor(Math.min(viewfinderHeight * 0.40, 220));
+          return { width: w, height: h };
+        }
       };
 
-      // Akses kamera belakang (facingMode: environment)
+      // Konfigurasi kamera High-Definition 1080p/720p dengan auto-focus berkelanjutan
+      const videoConfig = {
+        facingMode: "environment",
+        focusMode: "continuous",
+        width: { min: 1280, ideal: 1920 },
+        height: { min: 720, ideal: 1080 }
+      };
+
       html5QrCodeScanner.start(
-        { facingMode: "environment" },
+        videoConfig,
         qrConfig,
         onScanSuccess,
         onScanProgress
       ).then(function() {
-        scannerHint.textContent = "Arahkan kamera ke barcode kaset";
         checkTorchSupport();
       }).catch(function(err) {
-        handleCameraFailure("Izin kamera ditolak atau tidak tersedia: " + err);
+        // Fallback jika videoConfig resolusi tinggi ditolak perangkat tertentu
+        html5QrCodeScanner.start(
+          { facingMode: "environment" },
+          qrConfig,
+          onScanSuccess,
+          onScanProgress
+        ).then(function() {
+          checkTorchSupport();
+        }).catch(function(fallbackErr) {
+          handleCameraFailure("Izin kamera ditolak atau tidak tersedia: " + fallbackErr);
+        });
       });
     }
 
@@ -1596,7 +1706,18 @@
         try { navigator.vibrate(60); } catch (e) {}
       }
 
-      let finalVal = String(decodedText).trim().toUpperCase();
+      let rawVal = String(decodedText).trim();
+      // Handle jika barcode berupa string JSON (seperti sample sn2)
+      if (rawVal.startsWith("{") && rawVal.endsWith("}")) {
+        try {
+          const parsed = JSON.parse(rawVal);
+          if (parsed.SERIAL_NUMBER) rawVal = parsed.SERIAL_NUMBER;
+          else if (parsed.sn) rawVal = parsed.sn;
+          else if (parsed.nomorKaset) rawVal = parsed.nomorKaset;
+        } catch (e) {}
+      }
+
+      let finalVal = rawVal.toUpperCase();
       if (currentScanTarget === "sn") {
         finalVal = normalizeSN(finalVal);
         inputSn.value = finalVal;
@@ -1614,8 +1735,8 @@
     function onScanProgress() {}
 
     function handleCameraFailure(msg) {
-      scannerHint.innerHTML = 
-        `<span style="color:#f87171;">Akses kamera tidak dapat dimulai.</span><br>Gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.`;
+      scannerTipCard.innerHTML = 
+        `<span style="color:#f87171;">Akses kamera live tidak dapat dimulai.</span><br>Gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.`;
     }
 
     function checkTorchSupport() {
@@ -1646,27 +1767,101 @@
       fileInput.click();
     });
 
-    fileInput.addEventListener("change", function(e) {
+    // =========================================================================
+    // FALLBACK AMBIL FOTO: DEKODE MULTI-ROTASI OTOMATIS (0°, 90°, 270°, 180°)
+    // Membaca barcode batang tegak maupun tidur secara otomatis
+    // =========================================================================
+    fileInput.addEventListener("change", async function(e) {
       if (!e.target.files || e.target.files.length === 0) return;
       const imageFile = e.target.files[0];
-      scannerHint.textContent = "Mendekode gambar...";
+      scannerTipCard.innerHTML = "⏳ <strong>Mendekode gambar...</strong> Mencoba membaca berbagai sudut barcode...";
 
-      if (!html5QrCodeScanner) {
-        html5QrCodeScanner = new Html5Qrcode("reader");
+      // Matikan pemindai live jika sedang aktif agar tidak bentrok
+      if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
+        try {
+          await html5QrCodeScanner.stop();
+        } catch (stopErr) {}
       }
 
-      html5QrCodeScanner.scanFile(imageFile, true)
-        .then(function(decodedText) {
-          onScanSuccess(decodedText);
-          fileInput.value = "";
-        })
-        .catch(function() {
-          fileInput.value = "";
-          scannerHint.innerHTML = 
-            `<span style="color:#f87171;">Barcode tidak terbaca dari foto.</span> Silakan ulangi atau ketik manual.`;
-          showToast("Gagal Membaca", "Barcode tidak terbaca, silakan ketik manual.", "error");
-        });
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = createHtml5QrcodeInstance();
+      }
+
+      try {
+        const decodedResult = await decodeImageWithRotations(imageFile);
+        onScanSuccess(decodedResult);
+        fileInput.value = "";
+      } catch (err) {
+        fileInput.value = "";
+        scannerTipCard.innerHTML = 
+          `<span style="color:#f87171;">❌ Barcode tidak terbaca dari foto.</span><br>Pastikan foto fokus tidak buram, atau ketik langsung di kolom form.`;
+        showToast("Gagal Membaca", "Barcode tidak terbaca, silakan ketik manual.", "error");
+      }
     });
+
+    async function decodeImageWithRotations(imageFile) {
+      // 1. Coba decode langsung (sudut 0°)
+      try {
+        const rawRes = await html5QrCodeScanner.scanFile(imageFile, false);
+        if (rawRes) return rawRes;
+      } catch (e) {}
+
+      // 2. Putar gambar 90°, 270°, 180° di Canvas dan scale ke ukuran optimal
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = async function() {
+          const maxDim = 1600;
+          let scale = 1;
+          if (img.width > maxDim || img.height > maxDim) {
+            scale = Math.min(maxDim / img.width, maxDim / img.height);
+          }
+
+          const angles = [90, 270, 180];
+          for (const angle of angles) {
+            try {
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+
+              if (angle === 90 || angle === 270) {
+                canvas.width = Math.round(img.height * scale);
+                canvas.height = Math.round(img.width * scale);
+              } else {
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+              }
+
+              ctx.translate(canvas.width / 2, canvas.height / 2);
+              ctx.rotate((angle * Math.PI) / 180);
+              ctx.drawImage(
+                img,
+                (-img.width * scale) / 2,
+                (-img.height * scale) / 2,
+                Math.round(img.width * scale),
+                Math.round(img.height * scale)
+              );
+
+              const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.95));
+              if (!blob) continue;
+              const testFile = new File([blob], `rot_${angle}.jpg`, { type: "image/jpeg" });
+              
+              const rotResult = await html5QrCodeScanner.scanFile(testFile, false);
+              if (rotResult) {
+                URL.revokeObjectURL(img.src);
+                resolve(rotResult);
+                return;
+              }
+            } catch (rotErr) {}
+          }
+          URL.revokeObjectURL(img.src);
+          reject(new Error("Barcode tidak terbaca"));
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(img.src);
+          reject(new Error("Gagal membaca file"));
+        };
+        img.src = URL.createObjectURL(imageFile);
+      });
+    }
 
     function closeScannerModal() {
       if (html5QrCodeScanner) {
