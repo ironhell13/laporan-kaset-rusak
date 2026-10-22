@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Laporan Kaset Alsut</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kaset Alsut">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Library html5-qrcode untuk pemindaian barcode 1D dan QR Code -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
+  <style>
+    /* RESET & DASAR */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      line-height: 1.5;
+      padding: 16px 12px 48px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* CONTAINER UTAMA */
+    .app-container {
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .app-header {
+      position: relative;
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 4px 0;
+    }
+
+    .app-header h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .app-header .subtitle {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #2563eb;
+      background-color: #dbeafe;
+      padding: 2px 10px;
+      border-radius: 9999px;
+    }
+
+    .btn-settings {
+      position: absolute;
+      right: 4px;
+      top: 6px;
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-settings:hover {
+      background-color: #e2e8f0;
+      color: #334155;
+    }
+
+    /* STATUS CONNECTION BADGE */
+    .connection-status {
+      display: none;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .connection-status.is-warning {
+      display: block;
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    /* KARTU FORM */
+    .form-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 22px 18px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    /* FORM GROUP */
+    .form-group {
+      margin-bottom: 18px;
+      position: relative;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-label .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    /* INPUT & SELECT */
+    .form-input, .form-select {
+      width: 100%;
+      height: 48px;
+      font-size: 16px; /* Wajib >=16px agar iOS Safari tidak auto-zoom */
+      color: #0f172a;
+      background-color: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0 14px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .form-input.has-scan-btn {
+      padding-right: 52px;
+    }
+
+    .form-input.is-readonly {
+      background-color: #f8fafc;
+      color: #64748b;
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+      padding-left: 42px;
+    }
+
+    .readonly-icon {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    /* SELECT ARROW */
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #64748b;
+    }
+
+    /* TOMBOL SCAN DALAM INPUT */
+    .btn-scan {
+      position: absolute;
+      right: 6px;
+      height: 36px;
+      width: 40px;
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-scan:active {
+      background-color: #dbeafe;
+    }
+
+    /* ERROR & HINT MESSAGES */
+    .field-error {
+      display: none;
+      font-size: 0.78rem;
+      color: #dc2626;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .field-warning {
+      display: none;
+      font-size: 0.78rem;
+      color: #b45309;
+      background-color: #fef3c7;
+      padding: 5px 8px;
+      border-radius: 6px;
+      margin-top: 4px;
+      border: 1px solid #fde68a;
+    }
+
+    .has-error .form-input,
+    .has-error .form-select {
+      border-color: #ef4444;
+      background-color: #fef2f2;
+    }
+
+    .has-error .field-error {
+      display: block;
+    }
+
+    /* ACTION BUTTONS */
+    .btn-group {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+      background-color: #2563eb;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25);
+      transition: background-color 0.15s ease, transform 0.05s ease;
+    }
+
+    .btn-primary:active {
+      background-color: #1d4ed8;
+      transform: scale(0.99);
+    }
+
+    .btn-primary:disabled {
+      background-color: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      height: 44px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #475569;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-secondary:active {
+      background-color: #e2e8f0;
+    }
+
+    /* SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2.5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* TOAST / ALERT */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      width: 90%;
+      max-width: 420px;
+      background-color: #0f172a;
+      color: #ffffff;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      opacity: 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.toast-success {
+      background-color: #065f46;
+      border: 1px solid #059669;
+    }
+
+    .toast.toast-error {
+      background-color: #991b1b;
+      border: 1px solid #dc2626;
+    }
+
+    .toast-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .toast-content {
+      flex-grow: 1;
+    }
+
+    .toast-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+    }
+
+    .toast-desc {
+      font-size: 0.82rem;
+      opacity: 0.95;
+      line-height: 1.35;
+    }
+
+    /* BANNER ALERT */
+    .banner-alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .banner-danger {
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    /* RIWAYAT SESI INI */
+    .history-card {
+      margin-top: 24px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .history-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge-count {
+      background-color: #e2e8f0;
+      color: #475569;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      padding: 10px 12px;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.82rem;
+    }
+
+    .history-item-top {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .history-item-sub {
+      color: #64748b;
+      font-size: 0.78rem;
+    }
+
+    .empty-history {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.82rem;
+      padding: 12px 0;
+    }
+
+    /* MODAL SCANNER NATIVE */
+    .scanner-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: #000000;
+      z-index: 10000;
+      flex-direction: column;
+    }
+
+    .scanner-header {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #ffffff;
+      background-color: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .scanner-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .btn-close-scanner {
+      background: none;
+      border: none;
+      color: #ffffff;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-body {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    #reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    /* Reticle / Bingkai Pemindai */
+    .scanner-reticle {
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      border-radius: 16px;
+      pointer-events: none;
+      box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.45);
+    }
+
+    .scanner-reticle::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+      animation: scanBeam 2s infinite ease-in-out;
+    }
+
+    @keyframes scanBeam {
+      0% { top: 5%; }
+      50% { top: 95%; }
+      100% { top: 5%; }
+    }
+
+    .scanner-footer {
+      padding: 16px;
+      background-color: rgba(15, 23, 42, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .scanner-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .btn-scanner-action {
+      background-color: #334155;
+      color: #ffffff;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-scanner-action:active {
+      background-color: #475569;
+    }
+
+    .scanner-msg {
+      color: #94a3b8;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    /* MODAL DUPLIKAT & SETTINGS */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 11000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .dialog-box {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 380px;
+      padding: 22px 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    .dialog-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .dialog-title.title-warning {
+      color: #9a3412;
+    }
+
+    .dialog-title.title-primary {
+      color: #1e40af;
+    }
+
+    .dialog-text {
+      font-size: 0.88rem;
+      color: #475569;
+      line-height: 1.45;
+      margin-bottom: 18px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .dialog-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+    }
+
+    .dialog-btn-cancel {
+      background-color: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .dialog-btn-confirm {
+      background-color: #ea580c;
+      color: #ffffff;
+    }
+
+    .dialog-btn-save {
+      background-color: #2563eb;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- HEADER -->
+    <header class="app-header">
+      <h1>Laporan Kaset Alsut</h1>
+      <span class="subtitle">Tim Lapangan</span>
+
+      <!-- Tombol Pengaturan URL Apps Script (Opsional / Fallback) -->
+      <button type="button" class="btn-settings" id="btnOpenSettings" title="Pengaturan URL Google Apps Script">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- STATUS KONEKSI APPS SCRIPT -->
+    <div id="connectionStatus" class="connection-status"></div>
+
+    <!-- BANNER PERINGATAN (JIKA TYPE MESIN KOSONG/ERROR) -->
+    <div id="bannerAlert" class="banner-alert banner-danger"></div>
+
+    <!-- FORM CARD -->
+    <div class="form-card">
+      <form id="reportForm" novalidate>
+        
+        <!-- 1. WSID -->
+        <div class="form-group" id="group-wsid">
+          <label class="form-label" for="wsid">
+            WSID <span class="required">*</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="wsid" 
+              name="wsid" 
+              class="form-input" 
+              placeholder="Contoh: Z565J" 
+              maxlength="10" 
+              autocomplete="off"
+              autocapitalize="characters"
+              required
+            >
+          </div>
+          <div class="field-error" id="error-wsid">WSID wajib diisi (3-10 karakter huruf/angka).</div>
+        </div>
+
+        <!-- 2. TANGGAL REPLENISH (READ-ONLY) -->
+        <div class="form-group" id="group-tanggal">
+          <label class="form-label" for="tanggalReplenish">
+            Tanggal Replenish
+          </label>
+          <div class="input-wrapper">
+            <span class="readonly-icon">
+              <!-- Calendar SVG -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <input 
+              type="text" 
+              id="tanggalReplenish" 
+              class="form-input is-readonly" 
+              readonly 
+              value="Memuat tanggal..."
+            >
+          </div>
+        </div>
+
+        <!-- 3. NOMOR KASET (BARCODE ALSUT) -->
+        <div class="form-group" id="group-nomorKaset">
+          <label class="form-label" for="nomorKaset">
+            Nomor Kaset (Barcode Alsut) <span class="required">*</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="nomorKaset" 
+              name="nomorKaset" 
+              class="form-input has-scan-btn" 
+              placeholder="Contoh: WCR2063" 
+              autocomplete="off"
+              autocapitalize="characters"
+              required
+            >
+            <button type="button" class="btn-scan" id="btnScanKaset" title="Scan Barcode">
+              <!-- Camera SVG -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="field-error" id="error-nomorKaset">Nomor kaset wajib diisi.</div>
+        </div>
+
+        <!-- 4. S/N -->
+        <div class="form-group" id="group-sn">
+          <label class="form-label" for="sn">
+            S/N <span class="required">*</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="sn" 
+              name="sn" 
+              class="form-input has-scan-btn" 
+              placeholder="Contoh: SAB10153994" 
+              autocomplete="off"
+              autocapitalize="characters"
+              required
+            >
+            <button type="button" class="btn-scan" id="btnScanSN" title="Scan S/N">
+              <!-- Camera SVG -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="field-error" id="error-sn">S/N wajib diisi.</div>
+          <div class="field-warning" id="warning-sn">
+            Format S/N tidak biasa, pastikan nomor sudah benar.
+          </div>
+        </div>
+
+        <!-- 5. MODULE -->
+        <div class="form-group" id="group-module">
+          <label class="form-label" for="module">
+            Module <span class="required">*</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="module" name="module" class="form-select" required>
+              <option value="" disabled selected>Pilih module</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+            <span class="select-arrow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </div>
+          <div class="field-error" id="error-module">Silakan pilih module (1-6).</div>
+        </div>
+
+        <!-- 6. TYPE MESIN -->
+        <div class="form-group" id="group-typeMesin">
+          <label class="form-label" for="typeMesin">
+            Type Mesin <span class="required">*</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="typeMesin" name="typeMesin" class="form-select" required>
+              <option value="" disabled selected>Memuat daftar type mesin...</option>
+            </select>
+            <span class="select-arrow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </div>
+          <div class="field-error" id="error-typeMesin">Silakan pilih type mesin.</div>
+        </div>
+
+        <!-- TOMBOL AKSI -->
+        <div class="btn-group">
+          <button type="submit" class="btn-primary" id="btnSubmit">
+            <span id="btnSubmitText">Simpan Laporan</span>
+            <span id="btnSubmitSpinner" class="spinner" style="display: none;"></span>
+          </button>
+          <button type="button" class="btn-secondary" id="btnReset">
+            Reset
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- RIWAYAT SESI INI -->
+    <div class="history-card">
+      <div class="history-title">
+        <span>Riwayat Sesi Ini</span>
+        <span class="badge-count" id="historyCount">0 kaset</span>
+      </div>
+      <ul class="history-list" id="historyList">
+        <li class="empty-history" id="emptyHistoryMsg">Belum ada kaset yang dilaporkan pada sesi ini.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFIKASI -->
+  <div id="toast" class="toast">
+    <div class="toast-icon" id="toastIcon"></div>
+    <div class="toast-content">
+      <div class="toast-title" id="toastTitle">Berhasil</div>
+      <div class="toast-desc" id="toastDesc">Laporan tersimpan.</div>
+    </div>
+  </div>
+
+  <!-- MODAL FULL-SCREEN SCANNER -->
+  <div id="scannerModal" class="scanner-modal">
+    <div class="scanner-header">
+      <div class="scanner-title" id="scannerModalTitle">Scan Barcode</div>
+      <button type="button" class="btn-close-scanner" id="btnCloseScanner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="scanner-body">
+      <div id="reader"></div>
+      <div class="scanner-reticle"></div>
+    </div>
+
+    <div class="scanner-footer">
+      <div class="scanner-controls">
+        <button type="button" class="btn-scanner-action" id="btnToggleTorch" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Senter
+        </button>
+        <button type="button" class="btn-scanner-action" id="btnTriggerFile">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          Ambil Foto Barcode
+        </button>
+      </div>
+      <div class="scanner-msg" id="scannerHint">
+        Arahkan kamera ke barcode / QR code kaset
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT FILE TERSEMBUNYI UNTUK FALLBACK SCAN FOTO -->
+  <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
+
+  <!-- MODAL KONFIRMASI DUPLIKAT -->
+  <div id="duplicateModal" class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-title title-warning">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        Peringatan Duplikat
+      </div>
+      <div class="dialog-text" id="duplicateModalDesc">
+        Nomor kaset ini sudah pernah dilaporkan. Tetap simpan?
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="dialog-btn dialog-btn-cancel" id="btnDuplicateCancel">Batal</button>
+        <button type="button" class="dialog-btn dialog-btn-confirm" id="btnDuplicateConfirm">Tetap Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PENGATURAN API URL (FALLBACK/MANUAL) -->
+  <div id="settingsModal" class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-title title-primary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Pengaturan URL Apps Script
+      </div>
+      <div class="dialog-text" style="margin-bottom: 12px;">
+        Masukkan Web App URL dari Google Apps Script (akhiran <code>/exec</code>) jika belum disetel di Vercel:
+      </div>
+      <input 
+        type="url" 
+        id="settingsGasUrl" 
+        class="form-input" 
+        placeholder="https://script.google.com/macros/s/.../exec"
+        style="margin-bottom: 16px; font-size: 14px;"
+      >
+      <div class="dialog-actions">
+        <button type="button" class="dialog-btn dialog-btn-cancel" id="btnSettingsCancel">Batal</button>
+        <button type="button" class="dialog-btn dialog-btn-save" id="btnSettingsSave">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // =========================================================================
+    // STATE & KONFIGURASI CLIENT
+    // =========================================================================
+    const CLIENT_CONFIG = {
+      SN_NORMALIZE: true,
+      SN_PREFIX: "SAB10"
+    };
+
+    let sessionHistory = [];
+    let html5QrCodeScanner = null;
+    let currentScanTarget = null;
+    let isTorchOn = false;
+    let pendingPayload = null;
+
+    // Elemen DOM
+    const form = document.getElementById("reportForm");
+    const inputWsid = document.getElementById("wsid");
+    const inputTanggal = document.getElementById("tanggalReplenish");
+    const inputNomorKaset = document.getElementById("nomorKaset");
+    const inputSn = document.getElementById("sn");
+    const selectModule = document.getElementById("module");
+    const selectTypeMesin = document.getElementById("typeMesin");
+    const btnSubmit = document.getElementById("btnSubmit");
+    const btnSubmitText = document.getElementById("btnSubmitText");
+    const btnSubmitSpinner = document.getElementById("btnSubmitSpinner");
+    const btnReset = document.getElementById("btnReset");
+    const bannerAlert = document.getElementById("bannerAlert");
+    const warningSn = document.getElementById("warning-sn");
+    const connectionStatus = document.getElementById("connectionStatus");
+
+    // Scanner DOM
+    const scannerModal = document.getElementById("scannerModal");
+    const scannerTitle = document.getElementById("scannerModalTitle");
+    const btnCloseScanner = document.getElementById("btnCloseScanner");
+    const btnScanKaset = document.getElementById("btnScanKaset");
+    const btnScanSN = document.getElementById("btnScanSN");
+    const btnToggleTorch = document.getElementById("btnToggleTorch");
+    const btnTriggerFile = document.getElementById("btnTriggerFile");
+    const fileInput = document.getElementById("fileInput");
+    const scannerHint = document.getElementById("scannerHint");
+
+    // Modal Duplikat DOM
+    const duplicateModal = document.getElementById("duplicateModal");
+    const duplicateModalDesc = document.getElementById("duplicateModalDesc");
+    const btnDuplicateCancel = document.getElementById("btnDuplicateCancel");
+    const btnDuplicateConfirm = document.getElementById("btnDuplicateConfirm");
+
+    // Settings Modal DOM
+    const settingsModal = document.getElementById("settingsModal");
+    const btnOpenSettings = document.getElementById("btnOpenSettings");
+    const settingsGasUrl = document.getElementById("settingsGasUrl");
+    const btnSettingsCancel = document.getElementById("btnSettingsCancel");
+    const btnSettingsSave = document.getElementById("btnSettingsSave");
+
+    // Ambil custom GAS_URL dari localStorage (jika ada)
+    function getCustomGasUrl() {
+      return localStorage.getItem("CUSTOM_GAS_URL") || "";
+    }
+
+    function setCustomGasUrl(url) {
+      if (url && url.trim()) {
+        localStorage.setItem("CUSTOM_GAS_URL", url.trim());
+      } else {
+        localStorage.removeItem("CUSTOM_GAS_URL");
+      }
+    }
+
+    // =========================================================================
+    // API CLIENT (MENDUKUNG VERCEL SERVERLESS & DIRECT GAS CALL)
+    // =========================================================================
+    async function apiRequest(endpoint, payload, actionName) {
+      const customUrl = getCustomGasUrl();
+
+      // 1. Jika berjalan dalam Apps Script iframe (google.script.run)
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          if (actionName === "getInitialData") {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getInitialData();
+          } else if (actionName === "checkDuplicate") {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).checkDuplicate(payload.nomorKaset);
+          } else if (actionName === "saveReport") {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).saveReport(payload);
+          }
+        });
+      }
+
+      // 2. Jalankan request ke Vercel Serverless Function (/api/...)
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (customUrl) {
+          headers["X-GAS-URL"] = customUrl;
+        }
+
+        const isGet = (actionName === "getInitialData");
+        let url = `/api/${endpoint}`;
+        let fetchOptions = {
+          headers: headers
+        };
+
+        if (isGet) {
+          fetchOptions.method = "GET";
+        } else {
+          fetchOptions.method = "POST";
+          fetchOptions.body = JSON.stringify(payload || {});
+        }
+
+        const res = await fetch(url, fetchOptions);
+
+        // Jika endpoint /api/ tersedia di Vercel
+        if (res.ok) {
+          const json = await res.json();
+          // Jika backend Vercel mengabarkan bahwa GAS_URL belum diatur
+          if (json && json.message && json.message.includes("GAS_URL belum disetel")) {
+            showGasUrlPrompt();
+          }
+          return json;
+        } else if (res.status === 404 && customUrl) {
+          // Fallback: Jika dibuka sebagai static HTML murni tanpa Vercel API, panggil langsung customUrl
+          return directGasCall(customUrl, actionName, payload);
+        } else {
+          const errText = await res.text();
+          throw new Error(`API Error ${res.status}: ${errText.slice(0, 100)}`);
+        }
+      } catch (err) {
+        // Jika offline atau gagal connect ke Vercel API, coba direct GAS jika ada customUrl
+        if (customUrl) {
+          return directGasCall(customUrl, actionName, payload);
+        }
+        throw err;
+      }
+    }
+
+    // Direct fetch ke Apps Script Web App (POST dengan text/plain mencegah CORS preflight block)
+    async function directGasCall(gasUrl, action, payload) {
+      const body = {
+        action: action,
+        ...(payload || {})
+      };
+      const res = await fetch(gasUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(body),
+        redirect: "follow"
+      });
+      return await res.json();
+    }
+
+    // =========================================================================
+    // FUNGSI NORMALISASI S/N
+    // =========================================================================
+    function normalizeSN(raw) {
+      if (!raw) return "";
+      let str = String(raw).trim().toUpperCase();
+
+      if (!CLIENT_CONFIG.SN_NORMALIZE) {
+        return str;
+      }
+
+      // 1. Hapus awalan SN: atau S/N
+      str = str.replace(/^(SN\s*:|S\/N\s*:?)\s*/i, "").trim();
+
+      // 2. Cek apakah ada pola SAB10 diikuti digit
+      const sabMatch = str.match(/SAB10[\s\-_]*(\d+)/i);
+      if (sabMatch && sabMatch[1]) {
+        return CLIENT_CONFIG.SN_PREFIX + sabMatch[1];
+      }
+
+      // 3. Jika hanya angka murni
+      if (/^\d+$/.test(str)) {
+        return CLIENT_CONFIG.SN_PREFIX + str;
+      }
+
+      return str;
+    }
+
+    function checkSnWarning(val) {
+      if (!val) {
+        warningSn.style.display = "none";
+        return;
+      }
+      if (CLIENT_CONFIG.SN_NORMALIZE && !/^SAB10\d+$/.test(val)) {
+        warningSn.style.display = "block";
+      } else {
+        warningSn.style.display = "none";
+      }
+    }
+
+    // =========================================================================
+    // EVENT LISTENERS FORM & NORMALISASI
+    // =========================================================================
+    inputWsid.addEventListener("input", function() {
+      this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      clearFieldError("wsid");
+    });
+
+    inputNomorKaset.addEventListener("input", function() {
+      this.value = this.value.toUpperCase();
+      clearFieldError("nomorKaset");
+    });
+
+    inputSn.addEventListener("blur", function() {
+      if (this.value) {
+        const normalized = normalizeSN(this.value);
+        this.value = normalized;
+        checkSnWarning(normalized);
+      } else {
+        warningSn.style.display = "none";
+      }
+    });
+
+    inputSn.addEventListener("input", function() {
+      clearFieldError("sn");
+      checkSnWarning(this.value.trim().toUpperCase());
+    });
+
+    selectModule.addEventListener("change", function() {
+      clearFieldError("module");
+    });
+
+    selectTypeMesin.addEventListener("change", function() {
+      clearFieldError("typeMesin");
+    });
+
+    btnReset.addEventListener("click", function() {
+      resetForm(false);
+    });
+
+    // =========================================================================
+    // PENGATURAN API URL MODAL
+    // =========================================================================
+    btnOpenSettings.addEventListener("click", function() {
+      settingsGasUrl.value = getCustomGasUrl();
+      settingsModal.style.display = "flex";
+    });
+
+    btnSettingsCancel.addEventListener("click", function() {
+      settingsModal.style.display = "none";
+    });
+
+    btnSettingsSave.addEventListener("click", function() {
+      const val = settingsGasUrl.value.trim();
+      setCustomGasUrl(val);
+      settingsModal.style.display = "none";
+      showToast("Tersimpan", "URL Google Apps Script diperbarui. Memuat ulang data...", "success");
+      loadInitialData();
+    });
+
+    function showGasUrlPrompt() {
+      connectionStatus.className = "connection-status is-warning";
+      connectionStatus.innerHTML = `⚠️ Google Apps Script belum terhubung. <a href="javascript:void(0)" id="linkSetUrl" style="color:#2563eb;font-weight:600;text-decoration:underline;">Klik di sini untuk menyetel URL</a>`;
+      document.getElementById("linkSetUrl").addEventListener("click", function() {
+        btnOpenSettings.click();
+      });
+    }
+
+    // =========================================================================
+    // INISIALISASI DATA DARI SPREADSHEET
+    // =========================================================================
+    window.addEventListener("DOMContentLoaded", function() {
+      // Pulihkan WSID dan Type Mesin dari localStorage jika ada
+      const savedWsid = localStorage.getItem("LAST_WSID");
+      if (savedWsid) inputWsid.value = savedWsid;
+
+      loadInitialData();
+    });
+
+    async function loadInitialData() {
+      inputTanggal.value = formatLocalDate(new Date());
+
+      try {
+        const res = await apiRequest("initial-data", {}, "getInitialData");
+
+        if (res && res.today) {
+          inputTanggal.value = res.today;
+        }
+
+        if (res && res.success && res.typeMesinList && res.typeMesinList.length > 0) {
+          populateTypeDropdown(res.typeMesinList);
+          bannerAlert.style.display = "none";
+          connectionStatus.style.display = "none";
+        } else {
+          const errMsg = (res && res.message) ? res.message : "Daftar Type Mesin tidak tersedia, hubungi admin.";
+          showBannerAlert(errMsg);
+          selectTypeMesin.innerHTML = '<option value="" disabled selected>Daftar tidak tersedia</option>';
+          btnSubmit.disabled = true;
+        }
+      } catch (err) {
+        showBannerAlert("Gagal terhubung ke Google Spreadsheet: " + err.message);
+        btnSubmit.disabled = true;
+      }
+    }
+
+    function populateTypeDropdown(list) {
+      selectTypeMesin.innerHTML = '<option value="" disabled selected>Pilih type mesin</option>';
+      const savedType = localStorage.getItem("LAST_TYPE_MESIN");
+
+      list.forEach(function(item) {
+        const opt = document.createElement("option");
+        opt.value = item;
+        opt.textContent = item;
+        if (savedType && savedType === item) {
+          opt.selected = true;
+        }
+        selectTypeMesin.appendChild(opt);
+      });
+      selectTypeMesin.disabled = false;
+      btnSubmit.disabled = false;
+    }
+
+    function showBannerAlert(msg) {
+      bannerAlert.textContent = msg;
+      bannerAlert.style.display = "block";
+    }
+
+    function formatLocalDate(d) {
+      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      return d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+    }
+
+    // =========================================================================
+    // VALIDASI FORM
+    // =========================================================================
+    function setFieldError(fieldId, isError) {
+      const group = document.getElementById("group-" + fieldId);
+      if (group) {
+        if (isError) {
+          group.classList.add("has-error");
+        } else {
+          group.classList.remove("has-error");
+        }
+      }
+    }
+
+    function clearFieldError(fieldId) {
+      setFieldError(fieldId, false);
+    }
+
+    function validateClientForm() {
+      let isValid = true;
+
+      // 1. WSID
+      const wsid = inputWsid.value.trim().toUpperCase();
+      if (!wsid || !/^[A-Z0-9]{3,10}$/.test(wsid)) {
+        setFieldError("wsid", true);
+        isValid = false;
+      } else {
+        setFieldError("wsid", false);
+      }
+
+      // 2. Nomor Kaset
+      const nomorKaset = inputNomorKaset.value.trim();
+      if (!nomorKaset) {
+        setFieldError("nomorKaset", true);
+        isValid = false;
+      } else {
+        setFieldError("nomorKaset", false);
+      }
+
+      // 3. S/N
+      const snVal = normalizeSN(inputSn.value);
+      inputSn.value = snVal;
+      if (!snVal) {
+        setFieldError("sn", true);
+        isValid = false;
+      } else {
+        setFieldError("sn", false);
+      }
+
+      // 4. Module
+      const modVal = selectModule.value;
+      if (!modVal || parseInt(modVal, 10) < 1 || parseInt(modVal, 10) > 6) {
+        setFieldError("module", true);
+        isValid = false;
+      } else {
+        setFieldError("module", false);
+      }
+
+      // 5. Type Mesin
+      const typeVal = selectTypeMesin.value;
+      if (!typeVal) {
+        setFieldError("typeMesin", true);
+        isValid = false;
+      } else {
+        setFieldError("typeMesin", false);
+      }
+
+      return isValid;
+    }
+
+    // =========================================================================
+    // SUBMIT FORM & LOGIKA DUPLIKAT
+    // =========================================================================
+    form.addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      if (!validateClientForm()) {
+        showToast("Error", "Mohon lengkapi semua field dengan benar.", "error");
+        return;
+      }
+
+      const payload = {
+        wsid: inputWsid.value.trim().toUpperCase(),
+        nomorKaset: inputNomorKaset.value.trim().toUpperCase(),
+        sn: normalizeSN(inputSn.value),
+        module: parseInt(selectModule.value, 10),
+        typeMesin: selectTypeMesin.value.trim()
+      };
+
+      setSubmitLoading(true);
+
+      try {
+        // Cek duplikat terlebih dahulu
+        const res = await apiRequest("check-duplicate", { nomorKaset: payload.nomorKaset }, "checkDuplicate");
+
+        if (res && res.isDuplicate && res.duplicateInfo) {
+          setSubmitLoading(false);
+          pendingPayload = payload;
+          showDuplicateModal(res.duplicateInfo);
+        } else {
+          await executeSave(payload);
+        }
+      } catch (err) {
+        setSubmitLoading(false);
+        showToast("Gagal Cek Duplikat", err.message, "error");
+      }
+    });
+
+    function showDuplicateModal(info) {
+      duplicateModalDesc.innerHTML = 
+        `Nomor kaset <strong>${escapeHtml(info.nomorKaset)}</strong> sudah pernah dilaporkan pada tanggal <strong>${escapeHtml(info.tanggal)}</strong> untuk WSID <strong>${escapeHtml(info.wsid)}</strong>.<br><br>Tetap simpan laporan ini?`;
+      duplicateModal.style.display = "flex";
+    }
+
+    btnDuplicateCancel.addEventListener("click", function() {
+      duplicateModal.style.display = "none";
+      pendingPayload = null;
+      inputNomorKaset.focus();
+    });
+
+    btnDuplicateConfirm.addEventListener("click", async function() {
+      duplicateModal.style.display = "none";
+      if (pendingPayload) {
+        setSubmitLoading(true);
+        await executeSave(pendingPayload);
+        pendingPayload = null;
+      }
+    });
+
+    async function executeSave(payload) {
+      try {
+        const response = await apiRequest("save-report", { payload: payload }, "saveReport");
+        setSubmitLoading(false);
+
+        if (response && response.success) {
+          handleSaveSuccess(payload, response.data);
+        } else {
+          const msg = (response && response.message) ? response.message : "Terjadi kesalahan.";
+          showToast("Gagal Menyimpan", msg, "error");
+        }
+      } catch (err) {
+        setSubmitLoading(false);
+        showToast("Error Jaringan", "Gagal menyimpan ke spreadsheet: " + err.message, "error");
+      }
+    }
+
+    function handleSaveSuccess(payload, resultData) {
+      // 1. Tampilkan notifikasi hijau
+      const summary = `${payload.wsid} | ${payload.nomorKaset} | ${payload.sn} | Mod ${payload.module} | ${payload.typeMesin}`;
+      showToast("Laporan Tersimpan", summary, "success");
+
+      // 2. Tambah ke Riwayat Sesi Ini
+      const now = new Date();
+      const timeStr = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      addToSessionHistory({
+        wsid: payload.wsid,
+        nomorKaset: payload.nomorKaset,
+        sn: payload.sn,
+        module: payload.module,
+        typeMesin: payload.typeMesin,
+        jam: timeStr
+      });
+
+      // 3. Simpan preferensi WSID dan Type Mesin untuk kenyamanan user
+      localStorage.setItem("LAST_WSID", payload.wsid);
+      localStorage.setItem("LAST_TYPE_MESIN", payload.typeMesin);
+
+      // 4. Reset form: PERTAHANKAN WSID dan Type Mesin, kosongkan Nomor Kaset, S/N, Module
+      inputNomorKaset.value = "";
+      inputSn.value = "";
+      selectModule.value = "";
+      warningSn.style.display = "none";
+
+      clearFieldError("nomorKaset");
+      clearFieldError("sn");
+      clearFieldError("module");
+
+      // 5. Fokus kembali ke Nomor Kaset
+      inputNomorKaset.focus();
+    }
+
+    function setSubmitLoading(isLoading) {
+      if (isLoading) {
+        btnSubmit.disabled = true;
+        btnSubmitText.textContent = "Menyimpan...";
+        btnSubmitSpinner.style.display = "inline-block";
+      } else {
+        btnSubmit.disabled = false;
+        btnSubmitText.textContent = "Simpan Laporan";
+        btnSubmitSpinner.style.display = "none";
+      }
+    }
+
+    function resetForm(clearAll) {
+      if (clearAll) {
+        inputWsid.value = "";
+        selectTypeMesin.value = "";
+        localStorage.removeItem("LAST_WSID");
+        localStorage.removeItem("LAST_TYPE_MESIN");
+      }
+      inputNomorKaset.value = "";
+      inputSn.value = "";
+      selectModule.value = "";
+      warningSn.style.display = "none";
+
+      ["wsid", "nomorKaset", "sn", "module", "typeMesin"].forEach(clearFieldError);
+    }
+
+    // =========================================================================
+    // RIWAYAT SESI INI
+    // =========================================================================
+    function addToSessionHistory(item) {
+      sessionHistory.unshift(item);
+      renderSessionHistory();
+    }
+
+    function renderSessionHistory() {
+      const listEl = document.getElementById("historyList");
+      const countEl = document.getElementById("historyCount");
+      countEl.textContent = sessionHistory.length + " kaset";
+
+      if (sessionHistory.length === 0) {
+        listEl.innerHTML = '<li class="empty-history">Belum ada kaset yang dilaporkan pada sesi ini.</li>';
+        return;
+      }
+
+      listEl.innerHTML = "";
+      sessionHistory.forEach(function(item) {
+        const li = document.createElement("li");
+        li.className = "history-item";
+        li.innerHTML = `
+          <div class="history-item-top">
+            <span>${escapeHtml(item.nomorKaset)} &bull; Mod ${escapeHtml(item.module)}</span>
+            <span>${escapeHtml(item.jam)}</span>
+          </div>
+          <div class="history-item-sub">
+            S/N: <strong>${escapeHtml(item.sn)}</strong> &bull; ${escapeHtml(item.wsid)} &bull; ${escapeHtml(item.typeMesin)}
+          </div>
+        `;
+        listEl.appendChild(li);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // =========================================================================
+    // FITUR SCANNER 3-LAPIS (NATIVE KAMERA VERCEL HTTPS)
+    // =========================================================================
+    btnScanKaset.addEventListener("click", function() {
+      openScannerModal("nomorKaset", "Scan Nomor Kaset");
+    });
+
+    btnScanSN.addEventListener("click", function() {
+      openScannerModal("sn", "Scan S/N Kaset");
+    });
+
+    btnCloseScanner.addEventListener("click", function() {
+      closeScannerModal();
+    });
+
+    function openScannerModal(targetField, titleText) {
+      currentScanTarget = targetField;
+      scannerTitle.textContent = titleText;
+      scannerModal.style.display = "flex";
+      scannerHint.textContent = "Mengaktifkan kamera...";
+
+      startLiveScanner();
+    }
+
+    function startLiveScanner() {
+      if (typeof Html5Qrcode === "undefined") {
+        handleCameraFailure("Library pemindai belum siap.");
+        return;
+      }
+
+      const formats = [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ];
+
+      html5QrCodeScanner = new Html5Qrcode("reader", { formatsToSupport: formats, verbose: false });
+
+      const qrConfig = {
+        fps: 20,
+        qrbox: { width: 260, height: 260 },
+        aspectRatio: 1.0
+      };
+
+      // Akses kamera belakang (facingMode: environment)
+      html5QrCodeScanner.start(
+        { facingMode: "environment" },
+        qrConfig,
+        onScanSuccess,
+        onScanProgress
+      ).then(function() {
+        scannerHint.textContent = "Arahkan kamera ke barcode kaset";
+        checkTorchSupport();
+      }).catch(function(err) {
+        handleCameraFailure("Izin kamera ditolak atau tidak tersedia: " + err);
+      });
+    }
+
+    function onScanSuccess(decodedText) {
+      if (navigator.vibrate) {
+        try { navigator.vibrate(60); } catch (e) {}
+      }
+
+      let finalVal = String(decodedText).trim().toUpperCase();
+      if (currentScanTarget === "sn") {
+        finalVal = normalizeSN(finalVal);
+        inputSn.value = finalVal;
+        checkSnWarning(finalVal);
+        clearFieldError("sn");
+      } else if (currentScanTarget === "nomorKaset") {
+        inputNomorKaset.value = finalVal;
+        clearFieldError("nomorKaset");
+      }
+
+      closeScannerModal();
+      showToast("Scan Berhasil", finalVal, "success");
+    }
+
+    function onScanProgress() {}
+
+    function handleCameraFailure(msg) {
+      scannerHint.innerHTML = 
+        `<span style="color:#f87171;">Akses kamera tidak dapat dimulai.</span><br>Gunakan tombol <strong>Ambil Foto Barcode</strong> di bawah.`;
+    }
+
+    function checkTorchSupport() {
+      if (!html5QrCodeScanner) return;
+      try {
+        const capabilities = html5QrCodeScanner.getRunningTrackCapabilities();
+        if (capabilities && capabilities.torch) {
+          btnToggleTorch.style.display = "inline-flex";
+        } else {
+          btnToggleTorch.style.display = "none";
+        }
+      } catch (e) {
+        btnToggleTorch.style.display = "none";
+      }
+    }
+
+    btnToggleTorch.addEventListener("click", function() {
+      if (!html5QrCodeScanner) return;
+      isTorchOn = !isTorchOn;
+      html5QrCodeScanner.applyVideoConstraints({
+        advanced: [{ torch: isTorchOn }]
+      }).catch(function() {
+        isTorchOn = !isTorchOn;
+      });
+    });
+
+    btnTriggerFile.addEventListener("click", function() {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function(e) {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const imageFile = e.target.files[0];
+      scannerHint.textContent = "Mendekode gambar...";
+
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = new Html5Qrcode("reader");
+      }
+
+      html5QrCodeScanner.scanFile(imageFile, true)
+        .then(function(decodedText) {
+          onScanSuccess(decodedText);
+          fileInput.value = "";
+        })
+        .catch(function() {
+          fileInput.value = "";
+          scannerHint.innerHTML = 
+            `<span style="color:#f87171;">Barcode tidak terbaca dari foto.</span> Silakan ulangi atau ketik manual.`;
+          showToast("Gagal Membaca", "Barcode tidak terbaca, silakan ketik manual.", "error");
+        });
+    });
+
+    function closeScannerModal() {
+      if (html5QrCodeScanner) {
+        try {
+          if (html5QrCodeScanner.isScanning) {
+            html5QrCodeScanner.stop().then(function() {
+              html5QrCodeScanner.clear();
+              html5QrCodeScanner = null;
+            }).catch(function() {
+              html5QrCodeScanner = null;
+            });
+          } else {
+            html5QrCodeScanner.clear();
+            html5QrCodeScanner = null;
+          }
+        } catch (e) {
+          html5QrCodeScanner = null;
+        }
+      }
+      isTorchOn = false;
+      btnToggleTorch.style.display = "none";
+      scannerModal.style.display = "none";
+      currentScanTarget = null;
+    }
+
+    // =========================================================================
+    // TOAST NOTIFIKASI SYSTEM
+    // =========================================================================
+    let toastTimeout = null;
+    function showToast(title, desc, type) {
+      const toast = document.getElementById("toast");
+      const toastTitle = document.getElementById("toastTitle");
+      const toastDesc = document.getElementById("toastDesc");
+      const toastIcon = document.getElementById("toastIcon");
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+
+      toast.className = "toast " + (type === "success" ? "toast-success" : "toast-error");
+      toastTitle.textContent = title;
+      toastDesc.textContent = desc;
+
+      if (type === "success") {
+        toastIcon.innerHTML = `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        `;
+      } else {
+        toastIcon.innerHTML = `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        `;
+      }
+
+      toast.classList.add("show");
+
+      toastTimeout = setTimeout(function() {
+        toast.classList.remove("show");
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
