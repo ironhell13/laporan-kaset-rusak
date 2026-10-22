@@ -4,6 +4,8 @@
  * =========================================================================
  * Bertindak sebagai Headless API untuk frontend Vercel maupun Google Apps Script.
  * Data disimpan ke Google Spreadsheet pada sheet "Format Laporan Kaset Rusak".
+ * Kolom A-G diisi PKT, Kolom H-I (CCAS) tidak disentuh sama sekali.
+ * Dioptimasi khusus untuk penggunaan bersamaan hingga 20+ orang secara simultan.
  */
 
 // =========================================================================
@@ -18,6 +20,8 @@ const CONFIG = {
   // Nama sheet
   SHEET_NAME_REPORT: "Format Laporan Kaset Rusak",
   SHEET_NAME_TYPE: "Type Mesin",
+  SHEET_NAME_WSID: "WSID",
+  SHEET_NAME_MODULE: "Module",
 
   // Struktur baris
   HEADER_ROW: 2,
@@ -97,7 +101,6 @@ function doPost(e) {
       try {
         body = JSON.parse(raw);
       } catch (parseErr) {
-        // Fallback jika dikirim form-encoded
         body = e.parameter || {};
       }
     } else if (e && e.parameter) {
@@ -166,21 +169,17 @@ function normalizeSN(raw) {
     return str;
   }
 
-  // 1. Hapus awalan SN: atau S/N
   str = str.replace(/^(SN\s*:|S\/N\s*:?)\s*/i, "").trim();
 
-  // 2. Cek apakah mengandung pola SAB10 yang diikuti angka (dengan spasi/strip/tanda hubung)
   var sabMatch = str.match(/SAB10[\s\-_]*(\d+)/i);
   if (sabMatch && sabMatch[1]) {
     return CONFIG.SN_PREFIX + sabMatch[1];
   }
 
-  // 3. Jika hanya angka murni
   if (/^\d+$/.test(str)) {
     return CONFIG.SN_PREFIX + str;
   }
 
-  // 4. Default: kembalikan string apa adanya
   return str;
 }
 
@@ -188,6 +187,8 @@ function normalizeSN(raw) {
  * Mendapatkan data awal untuk form saat pertama dibuka:
  * - Tanggal hari ini (Asia/Jakarta, format ID)
  * - Daftar Type Mesin dari sheet "Type Mesin"
+ * - Daftar Module dari sheet "Module"
+ * - Daftar WSID dan LOKASI dari sheet "WSID"
  */
 function getInitialData() {
   try {
@@ -195,48 +196,68 @@ function getInitialData() {
     var now = new Date();
     var todayFormatted = formatIndonesianDate(now);
 
+    // 1. Baca Type Mesin
     var typeSheet = ss.getSheetByName(CONFIG.SHEET_NAME_TYPE);
-    if (!typeSheet) {
-      return {
-        success: false,
-        message: "Sheet '" + CONFIG.SHEET_NAME_TYPE + "' tidak ditemukan di spreadsheet. Hubungi admin.",
-        today: todayFormatted,
-        typeMesinList: []
-      };
+    var typeMesinList = [];
+    if (typeSheet && typeSheet.getLastRow() >= 2) {
+      var rawTypes = typeSheet.getRange(2, 1, typeSheet.getLastRow() - 1, 1).getValues();
+      var seenTypes = {};
+      for (var i = 0; i < rawTypes.length; i++) {
+        var tVal = String(rawTypes[i][0] || "").trim();
+        if (tVal && !seenTypes[tVal]) {
+          seenTypes[tVal] = true;
+          typeMesinList.push(tVal);
+        }
+      }
+    }
+    if (typeMesinList.length === 0) {
+      typeMesinList = ["Hyosung", "Hitachi", "OKI", "NCR", "YIHUA"];
     }
 
-    var lastRow = typeSheet.getLastRow();
-    var typeMesinList = [];
-
-    if (lastRow >= 2) {
-      var rawValues = typeSheet.getRange(2, 1, lastRow - 1, 1).getValues();
-      var seen = {};
-
-      for (var i = 0; i < rawValues.length; i++) {
-        var cell = rawValues[i][0];
-        if (cell !== null && cell !== undefined) {
-          var val = String(cell).trim();
-          if (val !== "" && !seen[val]) {
-            seen[val] = true;
-            typeMesinList.push(val);
+    // 2. Baca Module
+    var moduleSheet = ss.getSheetByName(CONFIG.SHEET_NAME_MODULE);
+    var moduleList = [];
+    if (moduleSheet && moduleSheet.getLastRow() >= 2) {
+      var rawModules = moduleSheet.getRange(2, 1, moduleSheet.getLastRow() - 1, 1).getValues();
+      var seenModules = {};
+      for (var m = 0; m < rawModules.length; m++) {
+        var mCell = rawModules[m][0];
+        if (mCell !== null && mCell !== undefined) {
+          var mVal = String(mCell).trim();
+          if (mVal && !seenModules[mVal]) {
+            seenModules[mVal] = true;
+            moduleList.push(mVal);
           }
         }
       }
     }
+    if (moduleList.length === 0) {
+      moduleList = ["1", "2", "3", "4", "5", "Reject", "Retract"];
+    }
 
-    if (typeMesinList.length === 0) {
-      return {
-        success: false,
-        message: "Daftar Type Mesin di sheet kosong. Hubungi admin.",
-        today: todayFormatted,
-        typeMesinList: []
-      };
+    // 3. Baca WSID dan LOKASI
+    var wsidSheet = ss.getSheetByName(CONFIG.SHEET_NAME_WSID);
+    var wsidList = [];
+    if (wsidSheet && wsidSheet.getLastRow() >= 2) {
+      var numWsid = wsidSheet.getLastRow() - 1;
+      var rawWsid = wsidSheet.getRange(2, 1, numWsid, 2).getValues();
+      var seenWsid = {};
+      for (var w = 0; w < rawWsid.length; w++) {
+        var wCode = String(rawWsid[w][0] || "").trim().toUpperCase();
+        var wLokasi = String(rawWsid[w][1] || "").trim();
+        if (wCode && !seenWsid[wCode]) {
+          seenWsid[wCode] = true;
+          wsidList.push([wCode, wLokasi]);
+        }
+      }
     }
 
     return {
       success: true,
       today: todayFormatted,
-      typeMesinList: typeMesinList
+      typeMesinList: typeMesinList,
+      moduleList: moduleList,
+      wsidList: wsidList
     };
 
   } catch (err) {
@@ -244,54 +265,16 @@ function getInitialData() {
       success: false,
       message: "Gagal mengambil data awal: " + err.message,
       today: formatIndonesianDate(new Date()),
-      typeMesinList: []
+      typeMesinList: [],
+      moduleList: ["1", "2", "3", "4", "5", "Reject", "Retract"],
+      wsidList: []
     };
   }
 }
 
 /**
- * Mencari baris kosong berikutnya hanya pada kolom A-F
- * Menghindari bug getLastRow() jika ada formatting di bawah data
- */
-function findNextEmptyRow(sheet) {
-  var maxRows = sheet.getMaxRows();
-  if (maxRows < CONFIG.FIRST_DATA_ROW) {
-    sheet.insertRowsAfter(maxRows, CONFIG.FIRST_DATA_ROW - maxRows);
-    return CONFIG.FIRST_DATA_ROW;
-  }
-
-  var numRowsToCheck = maxRows - CONFIG.FIRST_DATA_ROW + 1;
-  var values = sheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numRowsToCheck, 6).getValues();
-
-  var lastFilledOffset = -1;
-  for (var r = values.length - 1; r >= 0; r--) {
-    var row = values[r];
-    var isFilled = false;
-    for (var c = 0; c < 6; c++) {
-      if (row[c] !== "" && row[c] !== null && row[c] !== undefined) {
-        isFilled = true;
-        break;
-      }
-    }
-    if (isFilled) {
-      lastFilledOffset = r;
-      break;
-    }
-  }
-
-  var nextRow = (lastFilledOffset === -1)
-    ? CONFIG.FIRST_DATA_ROW
-    : (CONFIG.FIRST_DATA_ROW + lastFilledOffset + 1);
-
-  if (nextRow > sheet.getMaxRows()) {
-    sheet.insertRowsAfter(sheet.getMaxRows(), 5);
-  }
-
-  return nextRow;
-}
-
-/**
- * Cek apakah Nomor Kaset sudah pernah dilaporkan sebelumnya di kolom C
+ * Cek apakah Nomor Kaset sudah pernah dilaporkan sebelumnya di kolom D (Col 4)
+ * Kolom A=WSID, B=Lokasi, C=Tanggal, D=Nomor Kaset
  */
 function checkDuplicate(nomorKaset) {
   try {
@@ -306,20 +289,22 @@ function checkDuplicate(nomorKaset) {
       return { success: true, isDuplicate: false };
     }
 
-    var maxRows = sheet.getMaxRows();
-    if (maxRows < CONFIG.FIRST_DATA_ROW) {
+    var lastRow = sheet.getLastRow();
+    if (lastRow < CONFIG.FIRST_DATA_ROW) {
       return { success: true, isDuplicate: false };
     }
 
-    var numRows = maxRows - CONFIG.FIRST_DATA_ROW + 1;
-    var values = sheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numRows, 3).getValues();
+    var numRows = lastRow - CONFIG.FIRST_DATA_ROW + 1;
+    // Kolom A-D (Col 1-4)
+    var values = sheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numRows, 4).getValues();
 
     for (var i = values.length - 1; i >= 0; i--) {
       var row = values[i];
-      var existingKaset = String(row[2] || "").trim().toUpperCase();
+      var existingKaset = String(row[3] || "").trim().toUpperCase();
       if (existingKaset === cleanKaset) {
         var existingWsid = String(row[0] || "-").trim();
-        var rawDate = row[1];
+        var existingLokasi = String(row[1] || "-").trim();
+        var rawDate = row[2];
         var existingDate = "-";
         if (rawDate instanceof Date) {
           existingDate = formatIndonesianDate(rawDate);
@@ -333,6 +318,7 @@ function checkDuplicate(nomorKaset) {
           duplicateInfo: {
             nomorKaset: cleanKaset,
             wsid: existingWsid,
+            lokasi: existingLokasi,
             tanggal: existingDate,
             rowNumber: CONFIG.FIRST_DATA_ROW + i
           }
@@ -352,114 +338,97 @@ function checkDuplicate(nomorKaset) {
 
 /**
  * Menyimpan laporan kaset ke baris kosong berikutnya di sheet "Format Laporan Kaset Rusak"
- * Kolom A-F diisi, Kolom G-H (CCAS) tidak disentuh sama sekali.
+ * Kolom A-G diisi PKT, Kolom H-I (CCAS) tidak disentuh sama sekali.
+ * Sangat dioptimasi untuk penanganan 20 pengguna bersamaan (Hold lock < 200ms).
  */
 function saveReport(payload) {
+  if (!payload || typeof payload !== "object") {
+    return { success: false, message: "Data laporan tidak valid." };
+  }
+
+  // 1. Sanitasi & Validasi cepat di memori SEBELUM mengunci script
+  var wsid = String(payload.wsid || "").trim().toUpperCase();
+  var lokasi = String(payload.lokasi || "").trim();
+  var nomorKaset = String(payload.nomorKaset || "").trim().toUpperCase();
+  var rawSN = String(payload.sn || "").trim();
+  var normalizedSN = normalizeSN(rawSN);
+  var moduleVal = String(payload.module !== null && payload.module !== undefined ? payload.module : "").trim();
+  var typeMesin = String(payload.typeMesin || "").trim();
+
+  if (!wsid || !nomorKaset || !normalizedSN || !moduleVal || !typeMesin) {
+    return { success: false, message: "Semua kolom wajib diisi (WSID, Lokasi, Nomor Kaset, S/N, Module, Type Mesin)." };
+  }
+
+  if (!/^[A-Z0-9]{3,12}$/.test(wsid)) {
+    return { success: false, message: "WSID harus terdiri dari 3-12 karakter huruf/angka." };
+  }
+
+  var serverDate = new Date();
+
+  // Siapkan data baris (7 kolom: Col A sampai Col G)
+  var rowData = [[
+    sanitizeInput(wsid),
+    sanitizeInput(lokasi),
+    serverDate,
+    sanitizeInput(nomorKaset),
+    sanitizeInput(normalizedSN),
+    sanitizeInput(moduleVal),
+    sanitizeInput(typeMesin)
+  ]];
+
+  var formats = [["@", "@", CONFIG.DATE_NUMBER_FORMAT, "@", "@", "@", "@"]];
+
+  // 2. Dapatkan ScriptLock untuk penulisan atomik tanpa tabrakan baris
   var lock = LockService.getScriptLock();
   var lockAcquired = false;
 
   try {
-    // 1. Dapatkan Lock (30 detik timeout)
     lockAcquired = lock.tryLock(30000);
     if (!lockAcquired) {
       return {
         success: false,
-        message: "Sistem sedang sibuk memproses data lain. Silakan coba submit beberapa detik lagi."
+        message: "Sistem sedang sibuk melayani antrian. Silakan coba submit kembali."
       };
     }
 
-    // 2. Validasi Input di sisi server
-    if (!payload || typeof payload !== "object") {
-      return { success: false, message: "Data laporan tidak valid." };
-    }
-
-    var wsid = String(payload.wsid || "").trim().toUpperCase();
-    var nomorKaset = String(payload.nomorKaset || "").trim().toUpperCase();
-    var rawSN = String(payload.sn || "").trim();
-    var normalizedSN = normalizeSN(rawSN);
-    var moduleNum = parseInt(payload.module, 10);
-    var typeMesin = String(payload.typeMesin || "").trim();
-
-    // Validasi kelengkapan
-    if (!wsid || !nomorKaset || !normalizedSN || isNaN(moduleNum) || !typeMesin) {
-      return { success: false, message: "Semua 6 field wajib diisi." };
-    }
-
-    // Validasi WSID: 3-10 karakter alfanumerik
-    if (!/^[A-Z0-9]{3,10}$/.test(wsid)) {
-      return { success: false, message: "WSID harus terdiri dari 3-10 karakter huruf/angka." };
-    }
-
-    // Validasi Module: 1-6
-    if (moduleNum < 1 || moduleNum > 6) {
-      return { success: false, message: "Module harus berupa angka 1 sampai 6." };
-    }
-
-    // 3. Validasi Type Mesin dari sheet Type Mesin
     var ss = getSpreadsheet();
-    var typeSheet = ss.getSheetByName(CONFIG.SHEET_NAME_TYPE);
-    if (!typeSheet) {
-      return { success: false, message: "Sheet '" + CONFIG.SHEET_NAME_TYPE + "' tidak ditemukan." };
-    }
-
-    var lastTypeRow = typeSheet.getLastRow();
-    var validTypes = [];
-    if (lastTypeRow >= 2) {
-      var rawTypes = typeSheet.getRange(2, 1, lastTypeRow - 1, 1).getValues();
-      for (var t = 0; t < rawTypes.length; t++) {
-        var tVal = String(rawTypes[t][0] || "").trim();
-        if (tVal) validTypes.push(tVal);
-      }
-    }
-
-    if (validTypes.indexOf(typeMesin) === -1) {
-      return {
-        success: false,
-        message: "Type Mesin '" + typeMesin + "' tidak valid atau tidak terdaftar di sheet."
-      };
-    }
-
-    // 4. Buka sheet target laporan
     var reportSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
     if (!reportSheet) {
       return {
         success: false,
-        message: "Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan di spreadsheet."
+        message: "Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan."
       };
     }
 
-    // 5. Cari baris kosong berikutnya di kolom A-F
-    var targetRow = findNextEmptyRow(reportSheet);
+    // Cari baris kosong berikutnya hanya dengan membaca Kolom A (sangat cepat ~10ms)
+    var lastRow = reportSheet.getLastRow();
+    var targetRow = CONFIG.FIRST_DATA_ROW;
 
-    // 6. Tanggal server dibuat independen
-    var serverDate = new Date();
+    if (lastRow >= CONFIG.FIRST_DATA_ROW) {
+      var numToCheck = lastRow - CONFIG.FIRST_DATA_ROW + 1;
+      var colA = reportSheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numToCheck, 1).getValues();
+      var lastFilledOffset = -1;
+      for (var r = colA.length - 1; r >= 0; r--) {
+        if (colA[r][0] !== "" && colA[r][0] !== null && colA[r][0] !== undefined) {
+          lastFilledOffset = r;
+          break;
+        }
+      }
+      targetRow = (lastFilledOffset === -1)
+        ? CONFIG.FIRST_DATA_ROW
+        : (CONFIG.FIRST_DATA_ROW + lastFilledOffset + 1);
+    }
 
-    // 7. Siapkan Range Kolom A sampai F pada baris target
-    var targetRange = reportSheet.getRange(targetRow, 1, 1, 6);
+    if (targetRow > reportSheet.getMaxRows()) {
+      reportSheet.insertRowsAfter(reportSheet.getMaxRows(), 10);
+    }
 
-    // Number format:
-    // A: @ (Teks)
-    // B: d MMM yyyy (Tanggal asli)
-    // C: @ (Teks - kaset)
-    // D: @ (Teks - S/N)
-    // E: 0 (Angka bulat)
-    // F: @ (Teks)
-    var formats = [["@", CONFIG.DATE_NUMBER_FORMAT, "@", "@", "0", "@"]];
+    // Tulis ke kolom A-G (Cols 1-7)
+    var targetRange = reportSheet.getRange(targetRow, 1, 1, 7);
     targetRange.setNumberFormats(formats);
-
-    // Data yang akan ditulis:
-    var rowData = [[
-      sanitizeInput(wsid),
-      serverDate,
-      sanitizeInput(nomorKaset),
-      sanitizeInput(normalizedSN),
-      moduleNum,
-      sanitizeInput(typeMesin)
-    ]];
-
     targetRange.setValues(rowData);
 
-    // Flush perubahan ke Google Sheets
+    // Pastikan tersimpan segera
     SpreadsheetApp.flush();
 
     return {
@@ -468,10 +437,11 @@ function saveReport(payload) {
       data: {
         rowNumber: targetRow,
         wsid: wsid,
+        lokasi: lokasi,
         tanggal: formatIndonesianDate(serverDate),
         nomorKaset: nomorKaset,
         sn: normalizedSN,
-        module: moduleNum,
+        module: moduleVal,
         typeMesin: typeMesin
       }
     };
@@ -485,9 +455,7 @@ function saveReport(payload) {
     if (lockAcquired) {
       try {
         lock.releaseLock();
-      } catch (e) {
-        // Abaikan
-      }
+      } catch (e) {}
     }
   }
 }

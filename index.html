@@ -5,96 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Laporan Kaset Alsut</title>
   
-  <!-- PWA Meta Tags -->
+  <!-- Manifest & Favicon PWA -->
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Kaset Alsut">
-  <link rel="manifest" href="manifest.json">
 
-  <!-- Library html5-qrcode untuk pemindaian barcode 1D dan QR Code -->
+  <!-- Library Pemindai Barcode (Html5-QRCode CDN) -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  
+
   <style>
-    /* RESET & DASAR */
+    /* =========================================================================
+       RESET & BASE STYLES
+       ========================================================================= */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f1f5f9;
-      color: #1e293b;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
       line-height: 1.5;
-      padding: 16px 12px 48px;
-      -webkit-font-smoothing: antialiased;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    /* CONTAINER UTAMA */
     .app-container {
-      max-width: 460px;
+      width: 100%;
+      max-width: 480px;
       margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    /* HEADER */
+    /* =========================================================================
+       HEADER
+       ========================================================================= */
     .app-header {
-      position: relative;
+      padding: 12px 4px 6px;
       text-align: center;
-      margin-bottom: 20px;
-      padding: 4px 0;
     }
 
     .app-header h1 {
       font-size: 1.45rem;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: -0.02em;
+      font-weight: 800;
+      color: #1e293b;
+      letter-spacing: -0.025em;
     }
 
-    .app-header .subtitle {
-      display: inline-block;
-      margin-top: 4px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #2563eb;
-      background-color: #dbeafe;
-      padding: 2px 10px;
-      border-radius: 9999px;
-    }
-
-    .btn-settings {
-      position: absolute;
-      right: 4px;
-      top: 6px;
-      background: none;
-      border: none;
-      color: #64748b;
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn-settings:hover {
-      background-color: #e2e8f0;
-      color: #334155;
-    }
-
-    /* STATUS CONNECTION BADGE */
+    /* Status Koneksi / Notifikasi */
     .connection-status {
       display: none;
-      font-size: 0.78rem;
-      padding: 4px 10px;
-      border-radius: 6px;
-      margin-bottom: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
       text-align: center;
-      font-weight: 500;
+      line-height: 1.4;
     }
 
     .connection-status.is-warning {
@@ -104,19 +79,39 @@
       border: 1px solid #fde68a;
     }
 
-    /* KARTU FORM */
+    .banner-alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .banner-danger {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    /* =========================================================================
+       FORM CARD
+       ========================================================================= */
     .form-card {
       background: #ffffff;
       border-radius: 16px;
-      padding: 22px 18px;
+      padding: 20px 18px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
       border: 1px solid #e2e8f0;
     }
 
-    /* FORM GROUP */
     .form-group {
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       position: relative;
+    }
+
+    .form-group:last-of-type {
+      margin-bottom: 22px;
     }
 
     .form-label {
@@ -132,43 +127,50 @@
       margin-left: 2px;
     }
 
-    .input-wrapper {
+    /* Input & Wrapper */
+    .input-wrapper,
+    .select-wrapper,
+    .autocomplete-container {
       position: relative;
       display: flex;
       align-items: center;
+      width: 100%;
     }
 
-    /* INPUT & SELECT */
-    .form-input, .form-select {
+    .form-input,
+    .form-select {
       width: 100%;
       height: 48px;
-      font-size: 16px; /* Wajib >=16px agar iOS Safari tidak auto-zoom */
+      padding: 0 14px;
+      font-size: 16px; /* Wajib >=16px cegah zoom iOS */
       color: #0f172a;
       background-color: #ffffff;
       border: 1.5px solid #cbd5e1;
       border-radius: 10px;
-      padding: 0 14px;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
       outline: none;
-      -webkit-appearance: none;
-      appearance: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
     }
 
-    .form-input:focus, .form-select:focus {
+    .form-input:focus,
+    .form-select:focus {
       border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
-    .form-input.has-scan-btn {
-      padding-right: 52px;
+    .form-input::placeholder {
+      color: #94a3b8;
+      font-size: 0.92rem;
     }
 
+    /* Input Read-Only */
     .form-input.is-readonly {
-      background-color: #f8fafc;
-      color: #64748b;
+      background-color: #f1f5f9;
+      color: #475569;
+      border-color: #cbd5e1;
       cursor: not-allowed;
-      border-color: #e2e8f0;
       padding-left: 42px;
+      font-weight: 500;
     }
 
     .readonly-icon {
@@ -177,31 +179,24 @@
       color: #64748b;
       display: flex;
       align-items: center;
+      justify-content: center;
       pointer-events: none;
+      z-index: 2;
     }
 
-    /* SELECT ARROW */
-    .select-wrapper {
-      position: relative;
+    /* Input dengan Tombol Scan */
+    .form-input.has-scan-btn {
+      padding-right: 54px;
+      text-transform: uppercase;
     }
 
-    .select-arrow {
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
-      color: #64748b;
-    }
-
-    /* TOMBOL SCAN DALAM INPUT */
     .btn-scan {
       position: absolute;
-      right: 6px;
-      height: 36px;
-      width: 40px;
-      background-color: #eff6ff;
-      border: 1px solid #bfdbfe;
+      right: 4px;
+      width: 42px;
+      height: 40px;
+      background: none;
+      border: none;
       border-radius: 8px;
       color: #2563eb;
       display: flex;
@@ -209,66 +204,145 @@
       justify-content: center;
       cursor: pointer;
       transition: background-color 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-scan:hover {
+      background-color: #eff6ff;
     }
 
     .btn-scan:active {
       background-color: #dbeafe;
     }
 
-    /* ERROR & HINT MESSAGES */
+    /* Custom Select */
+    .form-select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 42px;
+      cursor: pointer;
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 14px;
+      pointer-events: none;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* =========================================================================
+       AUTOCOMPLETE WSID SUGGESTIONS BOX
+       ========================================================================= */
+    .suggestions-box {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.18), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1000;
+      padding: 4px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .suggestion-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.12s ease;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover,
+    .suggestion-item:active,
+    .suggestion-item.is-selected {
+      background-color: #eff6ff;
+    }
+
+    .sug-code {
+      font-weight: 700;
+      color: #1e40af;
+      font-size: 0.94rem;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .sug-loc {
+      font-size: 0.8rem;
+      color: #64748b;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 65%;
+    }
+
+    /* Error & Warning */
     .field-error {
       display: none;
+      color: #ef4444;
       font-size: 0.78rem;
-      color: #dc2626;
       margin-top: 4px;
       font-weight: 500;
     }
 
     .field-warning {
       display: none;
+      color: #d97706;
       font-size: 0.78rem;
-      color: #b45309;
-      background-color: #fef3c7;
-      padding: 5px 8px;
-      border-radius: 6px;
       margin-top: 4px;
-      border: 1px solid #fde68a;
+      font-weight: 500;
     }
 
-    .has-error .form-input,
-    .has-error .form-select {
+    .form-group.has-error .form-input,
+    .form-group.has-error .form-select {
       border-color: #ef4444;
-      background-color: #fef2f2;
+      background-color: #fffaf0;
     }
 
-    .has-error .field-error {
+    .form-group.has-error .field-error {
       display: block;
     }
 
-    /* ACTION BUTTONS */
+    /* Tombol Aksi */
     .btn-group {
-      margin-top: 24px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      margin-top: 8px;
     }
 
     .btn-primary {
       width: 100%;
       height: 50px;
-      font-size: 1rem;
-      font-weight: 600;
-      color: #ffffff;
       background-color: #2563eb;
+      color: #ffffff;
       border: none;
       border-radius: 12px;
-      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      cursor: pointer;
       box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25);
-      transition: background-color 0.15s ease, transform 0.05s ease;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
     }
 
     .btn-primary:active {
@@ -286,28 +360,29 @@
     .btn-secondary {
       width: 100%;
       height: 44px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: #475569;
-      background-color: #f1f5f9;
-      border: 1px solid #cbd5e1;
+      background-color: transparent;
+      color: #64748b;
+      border: 1.5px solid #cbd5e1;
       border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.15s ease;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
     }
 
     .btn-secondary:active {
-      background-color: #e2e8f0;
+      background-color: #f1f5f9;
+      color: #334155;
     }
 
-    /* SPINNER */
+    /* Spinner Animasi */
     .spinner {
-      display: inline-block;
       width: 20px;
       height: 20px;
-      border: 2.5px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
+      border: 2.5px solid rgba(255, 255, 255, 0.35);
       border-top-color: #ffffff;
+      border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
 
@@ -315,144 +390,65 @@
       to { transform: rotate(360deg); }
     }
 
-    /* TOAST / ALERT */
+    /* =========================================================================
+       TOAST NOTIFICATION (SNACKBAR)
+       ========================================================================= */
     .toast {
       position: fixed;
-      top: 16px;
+      bottom: -100px;
       left: 50%;
-      transform: translateX(-50%) translateY(-100px);
-      width: 90%;
-      max-width: 420px;
-      background-color: #0f172a;
-      color: #ffffff;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 440px;
       padding: 14px 16px;
       border-radius: 12px;
-      font-size: 0.9rem;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-      z-index: 9999;
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-      opacity: 0;
+      background: #0f172a;
+      color: #ffffff;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      transition: bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-
-    .toast.toast-success {
-      background-color: #065f46;
-      border: 1px solid #059669;
-    }
-
-    .toast.toast-error {
-      background-color: #991b1b;
-      border: 1px solid #dc2626;
+      bottom: 20px;
     }
 
     .toast-icon {
       flex-shrink: 0;
-      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toast.toast-success .toast-icon {
+      color: #4ade80;
+    }
+
+    .toast.toast-error .toast-icon {
+      color: #f87171;
     }
 
     .toast-content {
-      flex-grow: 1;
+      flex: 1;
     }
 
     .toast-title {
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 2px;
+      font-weight: 600;
+      font-size: 0.92rem;
     }
 
     .toast-desc {
-      font-size: 0.82rem;
-      opacity: 0.95;
-      line-height: 1.35;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-top: 1px;
     }
 
-    /* BANNER ALERT */
-    .banner-alert {
-      display: none;
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-size: 0.86rem;
-      margin-bottom: 16px;
-      line-height: 1.4;
-    }
-
-    .banner-danger {
-      background-color: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-    }
-
-    /* RIWAYAT SESI INI */
-    .history-card {
-      margin-top: 24px;
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 18px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .history-title {
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .badge-count {
-      background-color: #e2e8f0;
-      color: #475569;
-      font-size: 0.75rem;
-      padding: 2px 8px;
-      border-radius: 9999px;
-      font-weight: 600;
-    }
-
-    .history-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .history-item {
-      padding: 10px 12px;
-      background-color: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 0.82rem;
-    }
-
-    .history-item-top {
-      display: flex;
-      justify-content: space-between;
-      font-weight: 600;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-
-    .history-item-sub {
-      color: #64748b;
-      font-size: 0.78rem;
-    }
-
-    .empty-history {
-      text-align: center;
-      color: #94a3b8;
-      font-size: 0.82rem;
-      padding: 12px 0;
-    }
-
-    /* MODAL SCANNER NATIVE */
+    /* =========================================================================
+       MODAL SCANNER FULLSCREEN
+       ========================================================================= */
     .scanner-modal {
       display: none;
       position: fixed;
@@ -682,7 +678,7 @@
       color: #38bdf8;
     }
 
-    /* MODAL DUPLIKAT & SETTINGS */
+    /* MODAL DUPLIKAT */
     .dialog-overlay {
       display: none;
       position: fixed;
@@ -714,10 +710,6 @@
 
     .dialog-title.title-warning {
       color: #9a3412;
-    }
-
-    .dialog-title.title-primary {
-      color: #1e40af;
     }
 
     .dialog-text {
@@ -752,11 +744,6 @@
       background-color: #ea580c;
       color: #ffffff;
     }
-
-    .dialog-btn-save {
-      background-color: #2563eb;
-      color: #ffffff;
-    }
   </style>
 </head>
 <body>
@@ -765,15 +752,6 @@
     <!-- HEADER -->
     <header class="app-header">
       <h1>Laporan Kaset Alsut</h1>
-      <span class="subtitle">Tim Lapangan</span>
-
-      <!-- Tombol Pengaturan URL Apps Script (Opsional / Fallback) -->
-      <button type="button" class="btn-settings" id="btnOpenSettings" title="Pengaturan URL Google Apps Script">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </button>
     </header>
 
     <!-- STATUS KONEKSI APPS SCRIPT -->
@@ -786,28 +764,56 @@
     <div class="form-card">
       <form id="reportForm" novalidate>
         
-        <!-- 1. WSID -->
+        <!-- 1. WSID (AUTOCOMPLETE) -->
         <div class="form-group" id="group-wsid">
           <label class="form-label" for="wsid">
             WSID <span class="required">*</span>
           </label>
-          <div class="input-wrapper">
+          <div class="autocomplete-container">
             <input 
               type="text" 
               id="wsid" 
               name="wsid" 
               class="form-input" 
-              placeholder="Contoh: Z565J" 
-              maxlength="10" 
+              placeholder="Ketik kode WSID (contoh: Z006)..." 
+              maxlength="12" 
               autocomplete="off"
               autocapitalize="characters"
               required
             >
+            <!-- Suggestions Box -->
+            <div id="wsidSuggestions" class="suggestions-box" style="display: none;"></div>
           </div>
-          <div class="field-error" id="error-wsid">WSID wajib diisi (3-10 karakter huruf/angka).</div>
+          <div class="field-error" id="error-wsid">WSID wajib diisi (3-12 karakter alfanumerik).</div>
         </div>
 
-        <!-- 2. TANGGAL REPLENISH (READ-ONLY) -->
+        <!-- 2. LOKASI (OTOMATIS SESUAI WSID) -->
+        <div class="form-group" id="group-lokasi">
+          <label class="form-label" for="lokasi">
+            Lokasi <span class="required">*</span>
+          </label>
+          <div class="input-wrapper">
+            <span class="readonly-icon">
+              <!-- Map Pin SVG -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </span>
+            <input 
+              type="text" 
+              id="lokasi" 
+              name="lokasi" 
+              class="form-input is-readonly" 
+              readonly 
+              placeholder="Otomatis terisi sesuai WSID"
+              required
+            >
+          </div>
+          <div class="field-error" id="error-lokasi">Lokasi belum terisi. Pilih WSID dari daftar.</div>
+        </div>
+
+        <!-- 3. TANGGAL REPLENISH (READ-ONLY) -->
         <div class="form-group" id="group-tanggal">
           <label class="form-label" for="tanggalReplenish">
             Tanggal Replenish
@@ -832,7 +838,7 @@
           </div>
         </div>
 
-        <!-- 3. NOMOR KASET (BARCODE ALSUT) -->
+        <!-- 4. NOMOR KASET (BARCODE ALSUT) -->
         <div class="form-group" id="group-nomorKaset">
           <label class="form-label" for="nomorKaset">
             Nomor Kaset (Barcode Alsut) <span class="required">*</span>
@@ -859,7 +865,7 @@
           <div class="field-error" id="error-nomorKaset">Nomor kaset wajib diisi.</div>
         </div>
 
-        <!-- 4. S/N -->
+        <!-- 5. S/N -->
         <div class="form-group" id="group-sn">
           <label class="form-label" for="sn">
             S/N <span class="required">*</span>
@@ -889,20 +895,14 @@
           </div>
         </div>
 
-        <!-- 5. MODULE -->
+        <!-- 6. MODULE (DROPDOWN DARI SHEET MODULE) -->
         <div class="form-group" id="group-module">
           <label class="form-label" for="module">
             Module <span class="required">*</span>
           </label>
           <div class="select-wrapper">
             <select id="module" name="module" class="form-select" required>
-              <option value="" disabled selected>Pilih module</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
+              <option value="" disabled selected>Pilih module...</option>
             </select>
             <span class="select-arrow">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -910,10 +910,10 @@
               </svg>
             </span>
           </div>
-          <div class="field-error" id="error-module">Silakan pilih module (1-6).</div>
+          <div class="field-error" id="error-module">Silakan pilih module.</div>
         </div>
 
-        <!-- 6. TYPE MESIN -->
+        <!-- 7. TYPE MESIN (DROPDOWN DARI SHEET TYPE MESIN) -->
         <div class="form-group" id="group-typeMesin">
           <label class="form-label" for="typeMesin">
             Type Mesin <span class="required">*</span>
@@ -938,22 +938,11 @@
             <span id="btnSubmitSpinner" class="spinner" style="display: none;"></span>
           </button>
           <button type="button" class="btn-secondary" id="btnReset">
-            Reset
+            Reset Form
           </button>
         </div>
 
       </form>
-    </div>
-
-    <!-- RIWAYAT SESI INI -->
-    <div class="history-card">
-      <div class="history-title">
-        <span>Riwayat Sesi Ini</span>
-        <span class="badge-count" id="historyCount">0 kaset</span>
-      </div>
-      <ul class="history-list" id="historyList">
-        <li class="empty-history" id="emptyHistoryMsg">Belum ada kaset yang dilaporkan pada sesi ini.</li>
-      </ul>
     </div>
   </div>
 
@@ -1061,33 +1050,6 @@
     </div>
   </div>
 
-  <!-- MODAL PENGATURAN API URL (FALLBACK/MANUAL) -->
-  <div id="settingsModal" class="dialog-overlay">
-    <div class="dialog-box">
-      <div class="dialog-title title-primary">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-        Pengaturan URL Apps Script
-      </div>
-      <div class="dialog-text" style="margin-bottom: 12px;">
-        Masukkan Web App URL dari Google Apps Script (akhiran <code>/exec</code>) jika belum disetel di Vercel:
-      </div>
-      <input 
-        type="url" 
-        id="settingsGasUrl" 
-        class="form-input" 
-        placeholder="https://script.google.com/macros/s/.../exec"
-        style="margin-bottom: 16px; font-size: 14px;"
-      >
-      <div class="dialog-actions">
-        <button type="button" class="dialog-btn dialog-btn-cancel" id="btnSettingsCancel">Batal</button>
-        <button type="button" class="dialog-btn dialog-btn-save" id="btnSettingsSave">Simpan</button>
-      </div>
-    </div>
-  </div>
-
   <!-- JAVASCRIPT LOGIC -->
   <script>
     // =========================================================================
@@ -1098,16 +1060,21 @@
       SN_PREFIX: "SAB10"
     };
 
-    let sessionHistory = [];
+    let cachedWsidList = []; // [[wsid, lokasi], ...]
+    let cachedModuleList = [];
+    let cachedTypeList = [];
+
     let html5QrCodeScanner = null;
     let currentScanTarget = null;
-    let currentScanMode = "1d"; // '1d' (barcode batang) | '2d' (QR code)
+    let currentScanMode = "1d"; // '1d' | '2d'
     let isTorchOn = false;
     let pendingPayload = null;
 
-    // Elemen DOM
+    // Elemen DOM Form
     const form = document.getElementById("reportForm");
     const inputWsid = document.getElementById("wsid");
+    const inputLokasi = document.getElementById("lokasi");
+    const wsidSuggestions = document.getElementById("wsidSuggestions");
     const inputTanggal = document.getElementById("tanggalReplenish");
     const inputNomorKaset = document.getElementById("nomorKaset");
     const inputSn = document.getElementById("sn");
@@ -1141,33 +1108,18 @@
     const btnDuplicateCancel = document.getElementById("btnDuplicateCancel");
     const btnDuplicateConfirm = document.getElementById("btnDuplicateConfirm");
 
-    // Settings Modal DOM
-    const settingsModal = document.getElementById("settingsModal");
-    const btnOpenSettings = document.getElementById("btnOpenSettings");
-    const settingsGasUrl = document.getElementById("settingsGasUrl");
-    const btnSettingsCancel = document.getElementById("btnSettingsCancel");
-    const btnSettingsSave = document.getElementById("btnSettingsSave");
-
-    // Ambil custom GAS_URL dari localStorage (jika ada)
+    // Custom GAS_URL opsional
     function getCustomGasUrl() {
       return localStorage.getItem("CUSTOM_GAS_URL") || "";
     }
 
-    function setCustomGasUrl(url) {
-      if (url && url.trim()) {
-        localStorage.setItem("CUSTOM_GAS_URL", url.trim());
-      } else {
-        localStorage.removeItem("CUSTOM_GAS_URL");
-      }
-    }
-
     // =========================================================================
-    // API CLIENT (MENDUKUNG VERCEL SERVERLESS & DIRECT GAS CALL)
+    // API CLIENT (VERCEL SERVERLESS & DIRECT GAS FALLBACK)
     // =========================================================================
     async function apiRequest(endpoint, payload, actionName) {
       const customUrl = getCustomGasUrl();
 
-      // 1. Jika berjalan dalam Apps Script iframe (google.script.run)
+      // Jika berjalan di Apps Script iframe (google.script.run)
       if (typeof google !== "undefined" && google.script && google.script.run) {
         return new Promise((resolve, reject) => {
           if (actionName === "getInitialData") {
@@ -1180,43 +1132,34 @@
         });
       }
 
-      // 2. Jalankan request ke Vercel Serverless Function (/api/...)
+      // Default: Hubungi Vercel Serverless Function /api/...
       try {
         const headers = { "Content-Type": "application/json" };
-        if (customUrl) {
-          headers["X-GAS-URL"] = customUrl;
+        if (customUrl) headers["x-gas-url"] = customUrl;
+
+        const isGet = (endpoint === "initial-data" || endpoint === "check-duplicate");
+        let url = "/api/" + endpoint;
+        let options = { headers: headers };
+
+        if (isGet && endpoint === "check-duplicate") {
+          url += "?nomorKaset=" + encodeURIComponent((payload && payload.nomorKaset) || "");
+          options.method = "GET";
+        } else if (isGet) {
+          options.method = "GET";
+        } else {
+          options.method = "POST";
+          options.body = JSON.stringify(payload || {});
         }
 
-        const isGet = (actionName === "getInitialData");
-        let url = `/api/${endpoint}`;
-        let fetchOptions = {
-          headers: headers
-        };
-
-        if (isGet) {
-          fetchOptions.method = "GET";
-        } else {
-          fetchOptions.method = "POST";
-          fetchOptions.body = JSON.stringify(payload || {});
-        }
-
-        const res = await fetch(url, fetchOptions);
-
-        if (res.ok) {
-          const json = await res.json();
-          if (json && json.message && json.message.includes("GAS_URL belum disetel")) {
-            showGasUrlPrompt();
-          }
-          return json;
-        } else if (res.status === 404 && customUrl) {
-          return directGasCall(customUrl, actionName, payload);
-        } else {
+        const res = await fetch(url, options);
+        if (!res.ok) {
           const errText = await res.text();
-          throw new Error(`API Error ${res.status}: ${errText.slice(0, 100)}`);
+          throw new Error(`Server status ${res.status}: ${errText.substring(0, 100)}`);
         }
+        return await res.json();
       } catch (err) {
         if (customUrl) {
-          return directGasCall(customUrl, actionName, payload);
+          return await directGasCall(customUrl, actionName, payload);
         }
         throw err;
       }
@@ -1247,16 +1190,13 @@
         return str;
       }
 
-      // 1. Hapus awalan SN: atau S/N
       str = str.replace(/^(SN\s*:|S\/N\s*:?)\s*/i, "").trim();
 
-      // 2. Cek apakah ada pola SAB10 diikuti digit
       const sabMatch = str.match(/SAB10[\s\-_]*(\d+)/i);
       if (sabMatch && sabMatch[1]) {
         return CLIENT_CONFIG.SN_PREFIX + sabMatch[1];
       }
 
-      // 3. Jika hanya angka murni
       if (/^\d+$/.test(str)) {
         return CLIENT_CONFIG.SN_PREFIX + str;
       }
@@ -1277,13 +1217,108 @@
     }
 
     // =========================================================================
-    // EVENT LISTENERS FORM & NORMALISASI
+    // AUTOCOMPLETE WSID & AUTOFILL LOKASI (INSTANT / ZERO-LAG)
     // =========================================================================
     inputWsid.addEventListener("input", function() {
       this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
       clearFieldError("wsid");
+
+      const query = this.value.trim();
+      renderWsidSuggestions(query);
+
+      // Cek apakah query persis sama dengan salah satu WSID
+      autofillLokasiFromWsid(query);
     });
 
+    inputWsid.addEventListener("focus", function() {
+      const query = this.value.trim();
+      if (query.length >= 1) {
+        renderWsidSuggestions(query);
+      }
+    });
+
+    inputWsid.addEventListener("blur", function() {
+      // Delay agar event klik pada item suggestion sempat tereksekusi
+      setTimeout(function() {
+        wsidSuggestions.style.display = "none";
+        autofillLokasiFromWsid(inputWsid.value.trim());
+      }, 250);
+    });
+
+    function renderWsidSuggestions(query) {
+      if (!query || cachedWsidList.length === 0) {
+        wsidSuggestions.style.display = "none";
+        wsidSuggestions.innerHTML = "";
+        return;
+      }
+
+      const qUpper = query.toUpperCase();
+      // Filter WSID berdasarkan kode diawali query, atau kode mengandung query, atau nama lokasi
+      const matches = cachedWsidList.filter(function(item) {
+        const code = item[0] || "";
+        const loc = (item[1] || "").toLowerCase();
+        return code.includes(qUpper) || loc.includes(query.toLowerCase());
+      }).slice(0, 15); // Maks 15 item untuk kecepatan rendering
+
+      if (matches.length === 0) {
+        wsidSuggestions.style.display = "none";
+        wsidSuggestions.innerHTML = "";
+        return;
+      }
+
+      wsidSuggestions.innerHTML = "";
+      matches.forEach(function(item) {
+        const div = document.createElement("div");
+        div.className = "suggestion-item";
+        div.dataset.wsid = item[0];
+        div.dataset.lokasi = item[1];
+        div.innerHTML = `
+          <span class="sug-code">${escapeHtml(item[0])}</span>
+          <span class="sug-loc">${escapeHtml(item[1])}</span>
+        `;
+        div.addEventListener("mousedown", function(e) {
+          e.preventDefault(); // Cegah blur prematur
+          selectWsidItem(item[0], item[1]);
+        });
+        wsidSuggestions.appendChild(div);
+      });
+
+      wsidSuggestions.style.display = "block";
+    }
+
+    function selectWsidItem(wsid, lokasi) {
+      inputWsid.value = wsid;
+      inputLokasi.value = lokasi || "";
+      wsidSuggestions.style.display = "none";
+      clearFieldError("wsid");
+      clearFieldError("lokasi");
+
+      localStorage.setItem("LAST_WSID", wsid);
+      localStorage.setItem("LAST_LOKASI", lokasi || "");
+
+      // Fokus otomatis lanjut ke Nomor Kaset
+      inputNomorKaset.focus();
+    }
+
+    function autofillLokasiFromWsid(wsid) {
+      if (!wsid) {
+        inputLokasi.value = "";
+        return;
+      }
+      const match = cachedWsidList.find(function(item) {
+        return (item[0] || "").toUpperCase() === wsid.toUpperCase();
+      });
+      if (match) {
+        inputLokasi.value = match[1] || "";
+        clearFieldError("lokasi");
+        localStorage.setItem("LAST_WSID", wsid);
+        localStorage.setItem("LAST_LOKASI", match[1] || "");
+      }
+    }
+
+    // =========================================================================
+    // EVENT LISTENERS FORM LAINNYA
+    // =========================================================================
     inputNomorKaset.addEventListener("input", function() {
       this.value = this.value.toUpperCase();
       clearFieldError("nomorKaset");
@@ -1310,53 +1345,55 @@
 
     selectTypeMesin.addEventListener("change", function() {
       clearFieldError("typeMesin");
+      if (this.value) {
+        localStorage.setItem("LAST_TYPE_MESIN", this.value);
+      }
     });
 
     btnReset.addEventListener("click", function() {
-      resetForm(false);
+      resetForm(true);
     });
 
     // =========================================================================
-    // PENGATURAN API URL MODAL
-    // =========================================================================
-    btnOpenSettings.addEventListener("click", function() {
-      settingsGasUrl.value = getCustomGasUrl();
-      settingsModal.style.display = "flex";
-    });
-
-    btnSettingsCancel.addEventListener("click", function() {
-      settingsModal.style.display = "none";
-    });
-
-    btnSettingsSave.addEventListener("click", function() {
-      const val = settingsGasUrl.value.trim();
-      setCustomGasUrl(val);
-      settingsModal.style.display = "none";
-      showToast("Tersimpan", "URL Google Apps Script diperbarui. Memuat ulang data...", "success");
-      loadInitialData();
-    });
-
-    function showGasUrlPrompt() {
-      connectionStatus.className = "connection-status is-warning";
-      connectionStatus.innerHTML = `⚠️ Google Apps Script belum terhubung. <a href="javascript:void(0)" id="linkSetUrl" style="color:#2563eb;font-weight:600;text-decoration:underline;">Klik di sini untuk menyetel URL</a>`;
-      document.getElementById("linkSetUrl").addEventListener("click", function() {
-        btnOpenSettings.click();
-      });
-    }
-
-    // =========================================================================
-    // INISIALISASI DATA DARI SPREADSHEET
+    // INISIALISASI DATA DARI SPREADSHEET (CACHE FIRST -> ZERO LOADING LAG)
     // =========================================================================
     window.addEventListener("DOMContentLoaded", function() {
-      const savedWsid = localStorage.getItem("LAST_WSID");
-      if (savedWsid) inputWsid.value = savedWsid;
+      inputTanggal.value = formatLocalDate(new Date());
 
+      // 1. Muat dari LocalStorage Cache terlebih dahulu agar form langsung siap (0 ms)
+      loadFromClientCache();
+
+      // 2. Ambil data terbaru dari spreadsheet di latar belakang
       loadInitialData();
     });
 
-    async function loadInitialData() {
-      inputTanggal.value = formatLocalDate(new Date());
+    function loadFromClientCache() {
+      try {
+        const savedWsid = localStorage.getItem("LAST_WSID");
+        const savedLokasi = localStorage.getItem("LAST_LOKASI");
+        if (savedWsid) inputWsid.value = savedWsid;
+        if (savedLokasi) inputLokasi.value = savedLokasi;
 
+        const cachedTypes = localStorage.getItem("CACHE_TYPE_MESIN");
+        if (cachedTypes) {
+          cachedTypeList = JSON.parse(cachedTypes);
+          populateTypeDropdown(cachedTypeList);
+        }
+
+        const cachedModules = localStorage.getItem("CACHE_MODULES");
+        if (cachedModules) {
+          cachedModuleList = JSON.parse(cachedModules);
+          populateModuleDropdown(cachedModuleList);
+        }
+
+        const cachedWsidData = localStorage.getItem("CACHE_WSID_LIST");
+        if (cachedWsidData) {
+          cachedWsidList = JSON.parse(cachedWsidData);
+        }
+      } catch (e) {}
+    }
+
+    async function loadInitialData() {
       try {
         const res = await apiRequest("initial-data", {}, "getInitialData");
 
@@ -1364,25 +1401,48 @@
           inputTanggal.value = res.today;
         }
 
-        if (res && res.success && res.typeMesinList && res.typeMesinList.length > 0) {
-          populateTypeDropdown(res.typeMesinList);
+        if (res && res.success) {
+          // 1. Update Type Mesin
+          if (res.typeMesinList && res.typeMesinList.length > 0) {
+            cachedTypeList = res.typeMesinList;
+            localStorage.setItem("CACHE_TYPE_MESIN", JSON.stringify(cachedTypeList));
+            populateTypeDropdown(cachedTypeList);
+          }
+
+          // 2. Update Module
+          if (res.moduleList && res.moduleList.length > 0) {
+            cachedModuleList = res.moduleList;
+            localStorage.setItem("CACHE_MODULES", JSON.stringify(cachedModuleList));
+            populateModuleDropdown(cachedModuleList);
+          }
+
+          // 3. Update WSID & Lokasi List
+          if (res.wsidList && res.wsidList.length > 0) {
+            cachedWsidList = res.wsidList;
+            localStorage.setItem("CACHE_WSID_LIST", JSON.stringify(cachedWsidList));
+            // Sinkronkan lokasi jika WSID sudah terisi
+            if (inputWsid.value) {
+              autofillLokasiFromWsid(inputWsid.value);
+            }
+          }
+
           bannerAlert.style.display = "none";
           connectionStatus.style.display = "none";
         } else {
-          const errMsg = (res && res.message) ? res.message : "Daftar Type Mesin tidak tersedia, hubungi admin.";
+          const errMsg = (res && res.message) ? res.message : "Data konfigurasi tidak lengkap dari sheet.";
           showBannerAlert(errMsg);
-          selectTypeMesin.innerHTML = '<option value="" disabled selected>Daftar tidak tersedia</option>';
-          btnSubmit.disabled = true;
         }
       } catch (err) {
-        showBannerAlert("Gagal terhubung ke Google Spreadsheet: " + err.message);
-        btnSubmit.disabled = true;
+        if (!cachedTypeList || cachedTypeList.length === 0) {
+          showBannerAlert("Gagal terhubung ke Google Spreadsheet: " + err.message);
+          btnSubmit.disabled = true;
+        }
       }
     }
 
     function populateTypeDropdown(list) {
-      selectTypeMesin.innerHTML = '<option value="" disabled selected>Pilih type mesin</option>';
       const savedType = localStorage.getItem("LAST_TYPE_MESIN");
+      selectTypeMesin.innerHTML = '<option value="" disabled selected>Pilih type mesin...</option>';
 
       list.forEach(function(item) {
         const opt = document.createElement("option");
@@ -1397,6 +1457,22 @@
       btnSubmit.disabled = false;
     }
 
+    function populateModuleDropdown(list) {
+      const curVal = selectModule.value;
+      selectModule.innerHTML = '<option value="" disabled selected>Pilih module...</option>';
+
+      list.forEach(function(item) {
+        const opt = document.createElement("option");
+        opt.value = String(item);
+        opt.textContent = String(item);
+        if (curVal && curVal === String(item)) {
+          opt.selected = true;
+        }
+        selectModule.appendChild(opt);
+      });
+      selectModule.disabled = false;
+    }
+
     function showBannerAlert(msg) {
       bannerAlert.textContent = msg;
       bannerAlert.style.display = "block";
@@ -1408,7 +1484,7 @@
     }
 
     // =========================================================================
-    // VALIDASI FORM
+    // VALIDASI FORM CLIENT
     // =========================================================================
     function setFieldError(fieldId, isError) {
       const group = document.getElementById("group-" + fieldId);
@@ -1429,11 +1505,19 @@
       let isValid = true;
 
       const wsid = inputWsid.value.trim().toUpperCase();
-      if (!wsid || !/^[A-Z0-9]{3,10}$/.test(wsid)) {
+      if (!wsid || !/^[A-Z0-9]{3,12}$/.test(wsid)) {
         setFieldError("wsid", true);
         isValid = false;
       } else {
         setFieldError("wsid", false);
+      }
+
+      const lokasi = inputLokasi.value.trim();
+      if (!lokasi) {
+        setFieldError("lokasi", true);
+        isValid = false;
+      } else {
+        setFieldError("lokasi", false);
       }
 
       const nomorKaset = inputNomorKaset.value.trim();
@@ -1454,7 +1538,7 @@
       }
 
       const modVal = selectModule.value;
-      if (!modVal || parseInt(modVal, 10) < 1 || parseInt(modVal, 10) > 6) {
+      if (!modVal) {
         setFieldError("module", true);
         isValid = false;
       } else {
@@ -1473,21 +1557,22 @@
     }
 
     // =========================================================================
-    // SUBMIT FORM & LOGIKA DUPLIKAT
+    // SUBMIT FORM & LOGIKA DUPLIKAT (DIOPTIMASI UNTUK 20+ PENGGUNA)
     // =========================================================================
     form.addEventListener("submit", async function(e) {
       e.preventDefault();
 
       if (!validateClientForm()) {
-        showToast("Error", "Mohon lengkapi semua field dengan benar.", "error");
+        showToast("Form Belum Lengkap", "Mohon lengkapi semua kolom yang bertanda bintang (*).", "error");
         return;
       }
 
       const payload = {
         wsid: inputWsid.value.trim().toUpperCase(),
+        lokasi: inputLokasi.value.trim(),
         nomorKaset: inputNomorKaset.value.trim().toUpperCase(),
         sn: normalizeSN(inputSn.value),
-        module: parseInt(selectModule.value, 10),
+        module: selectModule.value.trim(),
         typeMesin: selectTypeMesin.value.trim()
       };
 
@@ -1504,14 +1589,15 @@
           await executeSave(payload);
         }
       } catch (err) {
-        setSubmitLoading(false);
-        showToast("Gagal Cek Duplikat", err.message, "error");
+        // Jika cek duplikat gagal jaringan, langsung coba simpan
+        console.warn("Cek duplikat error, langsung simpan:", err);
+        await executeSave(payload);
       }
     });
 
     function showDuplicateModal(info) {
       duplicateModalDesc.innerHTML = 
-        `Nomor kaset <strong>${escapeHtml(info.nomorKaset)}</strong> sudah pernah dilaporkan pada tanggal <strong>${escapeHtml(info.tanggal)}</strong> untuk WSID <strong>${escapeHtml(info.wsid)}</strong>.<br><br>Tetap simpan laporan ini?`;
+        `Nomor kaset <strong>${escapeHtml(info.nomorKaset)}</strong> sudah pernah dilaporkan pada tanggal <strong>${escapeHtml(info.tanggal)}</strong> untuk WSID <strong>${escapeHtml(info.wsid)}</strong> (${escapeHtml(info.lokasi || "")}).<br><br>Tetap simpan laporan ini?`;
       duplicateModal.style.display = "flex";
     }
 
@@ -1538,7 +1624,7 @@
         if (response && response.success) {
           handleSaveSuccess(payload, response.data);
         } else {
-          const msg = (response && response.message) ? response.message : "Terjadi kesalahan.";
+          const msg = (response && response.message) ? response.message : "Terjadi kendala saat menyimpan.";
           showToast("Gagal Menyimpan", msg, "error");
         }
       } catch (err) {
@@ -1548,23 +1634,15 @@
     }
 
     function handleSaveSuccess(payload, resultData) {
-      const summary = `${payload.wsid} | ${payload.nomorKaset} | ${payload.sn} | Mod ${payload.module} | ${payload.typeMesin}`;
-      showToast("Laporan Tersimpan", summary, "success");
+      const summary = `${payload.wsid} • ${payload.lokasi} • Kaset ${payload.nomorKaset}`;
+      showToast("Laporan Berhasil Disimpan", summary, "success");
 
-      const now = new Date();
-      const timeStr = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-      addToSessionHistory({
-        wsid: payload.wsid,
-        nomorKaset: payload.nomorKaset,
-        sn: payload.sn,
-        module: payload.module,
-        typeMesin: payload.typeMesin,
-        jam: timeStr
-      });
-
+      // Pertahankan WSID, Lokasi, dan Type Mesin di form & localStorage
       localStorage.setItem("LAST_WSID", payload.wsid);
+      localStorage.setItem("LAST_LOKASI", payload.lokasi);
       localStorage.setItem("LAST_TYPE_MESIN", payload.typeMesin);
 
+      // Kosongkan Nomor Kaset, S/N, dan Module agar siap input kaset berikutnya
       inputNomorKaset.value = "";
       inputSn.value = "";
       selectModule.value = "";
@@ -1574,6 +1652,7 @@
       clearFieldError("sn");
       clearFieldError("module");
 
+      // Fokus langsung ke field Nomor Kaset
       inputNomorKaset.focus();
     }
 
@@ -1592,8 +1671,10 @@
     function resetForm(clearAll) {
       if (clearAll) {
         inputWsid.value = "";
+        inputLokasi.value = "";
         selectTypeMesin.value = "";
         localStorage.removeItem("LAST_WSID");
+        localStorage.removeItem("LAST_LOKASI");
         localStorage.removeItem("LAST_TYPE_MESIN");
       }
       inputNomorKaset.value = "";
@@ -1601,42 +1682,8 @@
       selectModule.value = "";
       warningSn.style.display = "none";
 
-      ["wsid", "nomorKaset", "sn", "module", "typeMesin"].forEach(clearFieldError);
-    }
-
-    // =========================================================================
-    // RIWAYAT SESI INI
-    // =========================================================================
-    function addToSessionHistory(item) {
-      sessionHistory.unshift(item);
-      renderSessionHistory();
-    }
-
-    function renderSessionHistory() {
-      const listEl = document.getElementById("historyList");
-      const countEl = document.getElementById("historyCount");
-      countEl.textContent = sessionHistory.length + " kaset";
-
-      if (sessionHistory.length === 0) {
-        listEl.innerHTML = '<li class="empty-history">Belum ada kaset yang dilaporkan pada sesi ini.</li>';
-        return;
-      }
-
-      listEl.innerHTML = "";
-      sessionHistory.forEach(function(item) {
-        const li = document.createElement("li");
-        li.className = "history-item";
-        li.innerHTML = `
-          <div class="history-item-top">
-            <span>${escapeHtml(item.nomorKaset)} &bull; Mod ${escapeHtml(item.module)}</span>
-            <span>${escapeHtml(item.jam)}</span>
-          </div>
-          <div class="history-item-sub">
-            S/N: <strong>${escapeHtml(item.sn)}</strong> &bull; ${escapeHtml(item.wsid)} &bull; ${escapeHtml(item.typeMesin)}
-          </div>
-        `;
-        listEl.appendChild(li);
-      });
+      ["wsid", "lokasi", "nomorKaset", "sn", "module", "typeMesin"].forEach(clearFieldError);
+      inputWsid.focus();
     }
 
     function escapeHtml(str) {
@@ -1657,7 +1704,6 @@
     });
 
     btnScanSN.addEventListener("click", function() {
-      // Default ke 1D untuk S/N kaset
       openScannerModal("sn", "Scan S/N Kaset", "1d");
     });
 
@@ -1665,7 +1711,6 @@
       closeScannerModal();
     });
 
-    // Toggle Mode Pemindai 1D vs 2D
     btnMode1D.addEventListener("click", function() {
       setScannerMode("1d");
     });
@@ -1680,7 +1725,7 @@
         btnMode1D.classList.add("active");
         btnMode2D.classList.remove("active");
         scannerReticle.className = "scanner-reticle reticle-1d";
-        scannerTipCard.innerHTML = `💡 <strong>Tips Barcode Batang (1D):</strong> Arahkan garis laser merah <strong>tegak lurus memotong semua garis barcode</strong>.<br>Jika garis barcode kaset horizontal, <strong>miringkan HP Anda 90°</strong>.`;
+        scannerTipCard.innerHTML = `💡 <strong>Tips Barcode Batang (1D):</strong> Arahkan garis laser merah <strong>tegak lurus memotong semua garis barcode</strong>.<br>Jika garis barcode kaset horizontal/sejajar, <strong>miringkan HP Anda 90°</strong>.`;
       } else {
         btnMode2D.classList.add("active");
         btnMode1D.classList.remove("active");
@@ -1720,7 +1765,6 @@
     }
 
     function createHtml5QrcodeInstance() {
-      // Format yang didukung: Code 128, Code 39, QR, EAN, ITF, Data Matrix, Codabar
       const formats = [
         Html5QrcodeSupportedFormats.CODE_128,
         Html5QrcodeSupportedFormats.CODE_39,
@@ -1747,7 +1791,6 @@
       showScannerLoading(true);
       hideScannerError();
 
-      // Hentikan dan bersihkan instance lama jika ada
       if (html5QrCodeScanner) {
         try {
           if (html5QrCodeScanner.isScanning) {
@@ -1763,7 +1806,6 @@
 
       html5QrCodeScanner = createHtml5QrcodeInstance();
 
-      // Kotak pemindai dinamis dan luas agar barcode batang panjang tidak terpotong
       const qrConfig = {
         fps: 20,
         qrbox: function(viewfinderWidth, viewfinderHeight) {
@@ -1775,7 +1817,6 @@
         }
       };
 
-      // Tentukan target kamera yang tepat (HP vs Laptop)
       let cameraConfig = { facingMode: "environment" };
       try {
         const devices = await Html5Qrcode.getCameras();
@@ -1830,7 +1871,6 @@
       }
 
       let rawVal = String(decodedText).trim();
-      // Handle jika barcode berupa string JSON (seperti sample sn2)
       if (rawVal.startsWith("{") && rawVal.endsWith("}")) {
         try {
           const parsed = JSON.parse(rawVal);
@@ -1892,16 +1932,11 @@
       fileInput.click();
     });
 
-    // =========================================================================
-    // FALLBACK AMBIL FOTO: DEKODE MULTI-ROTASI OTOMATIS (0°, 90°, 270°, 180°)
-    // Membaca barcode batang tegak maupun tidur secara otomatis
-    // =========================================================================
     fileInput.addEventListener("change", async function(e) {
       if (!e.target.files || e.target.files.length === 0) return;
       const imageFile = e.target.files[0];
       scannerTipCard.innerHTML = "⏳ <strong>Mendekode gambar...</strong> Mencoba membaca berbagai sudut barcode...";
 
-      // Matikan pemindai live jika sedang aktif agar tidak bentrok
       if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
         try {
           await html5QrCodeScanner.stop();
@@ -1925,13 +1960,11 @@
     });
 
     async function decodeImageWithRotations(imageFile) {
-      // 1. Coba decode langsung (sudut 0°)
       try {
         const rawRes = await html5QrCodeScanner.scanFile(imageFile, false);
         if (rawRes) return rawRes;
       } catch (e) {}
 
-      // 2. Putar gambar 90°, 270°, 180° di Canvas dan scale ke ukuran optimal
       return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = async function() {
