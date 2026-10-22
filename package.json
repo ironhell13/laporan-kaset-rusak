@@ -1,0 +1,21 @@
+{
+  "name": "laporan-kaset-alsut",
+  "version": "1.0.0",
+  "description": "Mobile-first web app pelaporan barcode kaset ATM CRM terkoneksi ke Google Spreadsheet",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx vercel dev"
+  },
+  "keywords": [
+    "laporan",
+    "kaset",
+    "atm",
+    "crm",
+    "barcode",
+    "scanner",
+    "google-sheets"
+  ],
+  "author": "",
+  "license": "MIT"
+}
