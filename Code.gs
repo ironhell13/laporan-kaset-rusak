@@ -36,9 +36,9 @@ const CONFIG = {
   SN_NORMALIZE: true,
   SN_PREFIX: "SAB10",
 
-  // Dimensi foto pada sel Spreadsheet (9,25 cm x 12,31 cm pada 96 DPI)
-  PHOTO_CELL_WIDTH: 350,   // 9,25 cm = ~350 pixel
-  PHOTO_CELL_HEIGHT: 465   // 12,31 cm = ~465 pixel
+  // Dimensi foto pada sel Spreadsheet (Lebar: 12,31 cm x Tinggi: 9,25 cm pada 96 DPI)
+  PHOTO_CELL_WIDTH: 465,   // Lebar: 12,31 cm = ~465 pixel
+  PHOTO_CELL_HEIGHT: 350   // Tinggi: 9,25 cm = ~350 pixel
 };
 
 /**
@@ -461,7 +461,7 @@ function getReportColumnMapping(sheet) {
 
 /**
  * Menyimpan laporan kaset dan menyisipkan 2 foto (Result Test Cash & Label Modul)
- * Dimensi sel: 9,25 x 12,31 cm (350x465 px).
+ * Dimensi sel: Lebar: 12,31 cm x Tinggi: 9,25 cm (465x350 px).
  * Dioptimasi tinggi untuk konkurensi 50+ pengguna (Blob dibuat di luar lock).
  */
 function saveReport(payload) {
@@ -607,7 +607,7 @@ function saveReport(payload) {
     reportSheet.getRange(targetRow, 1, 1, maxColsToWrite).setValues([rowValues]);
     reportSheet.getRange(targetRow, colMap.tanggal).setNumberFormat(CONFIG.DATE_NUMBER_FORMAT);
 
-    // 7. Atur dimensi sel presisi 9,25 x 12,31 cm
+    // 7. Atur dimensi sel presisi Lebar: 12,31 cm x Tinggi: 9,25 cm
     reportSheet.setRowHeight(targetRow, CONFIG.PHOTO_CELL_HEIGHT);
     if (colMap.fotoTestCash) {
       reportSheet.setColumnWidth(colMap.fotoTestCash, CONFIG.PHOTO_CELL_WIDTH);
@@ -623,7 +623,7 @@ function saveReport(payload) {
       insertImageWithRetry(reportSheet, blobTestCash, colMap.fotoTestCash, targetRow, CONFIG.PHOTO_CELL_WIDTH, CONFIG.PHOTO_CELL_HEIGHT, fn1, note1);
     }
     if (blobLabelBad && colMap.fotoLabelBad) {
-      var note2 = "File: " + fn2 + "\nKategori: Label Kaset Bad (Posisi di Modul)\nWSID: " + wsid + "\nNomor Kaset: " + nomorKaset + "\nTanggal: " + dateFormattedStr;
+      var note2 = "File: " + fn2 + "\nKategori: Kaset dengan Label Bad\nWSID: " + wsid + "\nNomor Kaset: " + nomorKaset + "\nTanggal: " + dateFormattedStr;
       insertImageWithRetry(reportSheet, blobLabelBad, colMap.fotoLabelBad, targetRow, CONFIG.PHOTO_CELL_WIDTH, CONFIG.PHOTO_CELL_HEIGHT, fn2, note2);
     }
 

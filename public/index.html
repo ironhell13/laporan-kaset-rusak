@@ -909,9 +909,9 @@
     .photo-preview-wrapper {
       position: relative;
       width: 100%;
-      max-width: 240px;
+      max-width: 320px;
       margin: 0 auto;
-      aspect-ratio: 350 / 465;
+      aspect-ratio: 465 / 350;
       background-color: #0f172a;
       border-radius: 10px;
       overflow: hidden;
@@ -1264,7 +1264,7 @@
           <div class="photo-preview-card" id="previewCard_fotoTestCash" style="display: none;">
             <div class="photo-preview-wrapper">
               <img id="previewImg_fotoTestCash" class="photo-preview-img" alt="Pratinjau Layar ATM">
-              <span class="photo-status-badge">Rapi ✓ 9,25 × 12,31 cm</span>
+              <span class="photo-status-badge">Rapi ✓ 12,31 × 9,25 cm</span>
             </div>
 
             <!-- Toolbar Kontrol: Putar 90°, Toggle Mode Skala, Ganti Foto -->
@@ -1309,16 +1309,16 @@
           <div class="field-error" id="error-fotoTestCash">Foto result test cash (layar ATM) belum dilampirkan.</div>
         </div>
 
-        <!-- 9. FOTO LABEL KASET BAD (POSISI DI MODUL) -->
+        <!-- 9. FOTO KASET DENGAN LABEL BAD -->
         <div class="photo-upload-group" id="group-fotoLabelBad">
           <div class="photo-header">
             <div class="photo-title-wrap">
               <label class="form-label" style="margin-bottom: 0;">
-                Foto Label Kaset Bad <span class="required">*</span>
+                Foto Kaset dengan Label Bad <span class="required">*</span>
               </label>
-              <span class="photo-subbadge subbadge-modul">Posisi di Modul ATM</span>
+              <span class="photo-subbadge subbadge-modul">Kaset dengan Label Bad</span>
             </div>
-            <span class="photo-hint">Ambil foto fisik kaset dan stiker label posisi kaset di dalam modul ATM.</span>
+            <span class="photo-hint">Ambil foto fisik kaset yang memperlihatkan stiker label kaset bad.</span>
           </div>
 
           <!-- Dropzone ketika belum ada foto -->
@@ -1355,8 +1355,8 @@
           <!-- Preview & Controls ketika foto sudah diambil -->
           <div class="photo-preview-card" id="previewCard_fotoLabelBad" style="display: none;">
             <div class="photo-preview-wrapper">
-              <img id="previewImg_fotoLabelBad" class="photo-preview-img" alt="Pratinjau Label Kaset Modul">
-              <span class="photo-status-badge">Rapi ✓ 9,25 × 12,31 cm</span>
+              <img id="previewImg_fotoLabelBad" class="photo-preview-img" alt="Pratinjau Kaset dengan Label Bad">
+              <span class="photo-status-badge">Rapi ✓ 12,31 × 9,25 cm</span>
             </div>
 
             <!-- Toolbar Kontrol: Putar 90°, Toggle Mode Skala, Ganti Foto -->
@@ -1398,7 +1398,7 @@
           <!-- Hidden File Inputs -->
           <input type="file" id="inputCam_fotoLabelBad" accept="image/*" capture="environment" style="display: none;" onchange="handleFilePicked('fotoLabelBad', this)">
           <input type="file" id="inputGal_fotoLabelBad" accept="image/*" style="display: none;" onchange="handleFilePicked('fotoLabelBad', this)">
-          <div class="field-error" id="error-fotoLabelBad">Foto label kaset bad (posisi modul) belum dilampirkan.</div>
+          <div class="field-error" id="error-fotoLabelBad">Foto kaset dengan label bad belum dilampirkan.</div>
         </div>
 
         <!-- TOMBOL AKSI -->
@@ -2016,8 +2016,8 @@
     // - Penamaan File Foto Otomatis & Terstruktur
     // =========================================================================
     const PHOTO_CONFIG = {
-      TARGET_WIDTH: 700,    // Retina 2x untuk 350 px (9,25 cm)
-      TARGET_HEIGHT: 930,   // Retina 2x untuk 465 px (12,31 cm)
+      TARGET_WIDTH: 930,    // Retina 2x untuk 465 px (Lebar: 12,31 cm)
+      TARGET_HEIGHT: 700,   // Retina 2x untuk 350 px (Tinggi: 9,25 cm)
       JPEG_QUALITY: 0.85    // Kompresi optimal: sangat tajam, ukuran ~35-48 KB
     };
 
@@ -2217,7 +2217,7 @@
 
       if (photoInfo) {
         const modeTxt = state.scaleMode === "fit" ? "Fit" : "Crop";
-        photoInfo.textContent = `9,25×12,31 cm (${sizeKb} KB) • Rot: ${state.rotation}° • ${modeTxt}`;
+        photoInfo.textContent = `12,31×9,25 cm (${sizeKb} KB) • Rot: ${state.rotation}° • ${modeTxt}`;
       }
       if (photoStruct) {
         photoStruct.textContent = state.structuredFilename;
@@ -2341,7 +2341,7 @@
         setFieldError("fotoTestCash", false);
       }
 
-      // Validasi Foto 2: Label Kaset Bad (Posisi di Modul)
+      // Validasi Foto 2: Kaset dengan Label Bad
       if (!photoState.fotoLabelBad.optimizedBase64) {
         setFieldError("fotoLabelBad", true);
         isValid = false;

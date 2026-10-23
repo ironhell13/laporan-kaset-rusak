@@ -127,15 +127,15 @@ Anda dapat memasukkan Nomor Kaset dengan dua cara:
 ---
 
 ### Langkah 8: Melampirkan 2 Foto Bukti Kaset Rusak (Wajib)
-Sistem mewajibkan melampirkan 2 foto bukti yang akan otomatis dimasukkan langsung ke dalam sel spreadsheet dengan ukuran standar presisi **9,25 cm x 12,31 cm** (350 × 465 px HD Retina, ukuran file ringan ~35–48 KB):
+Sistem mewajibkan melampirkan 2 foto bukti yang akan otomatis dimasukkan langsung ke dalam sel spreadsheet dengan ukuran standar presisi **Lebar: 12,31 cm x Tinggi: 9,25 cm** (465 × 350 px pada Spreadsheet / 930 × 700 px HD Retina, ukuran file ringan ~35–48 KB):
 
 1. **Foto 1: Result Test Cash (Layar ATM Error Code / Fatal Cassette)**:
    - **Objek yang difoto**: Layar monitor mesin ATM yang menampilkan kode error atau status fatal cassette (*Bukan foto struk kertas*).
    - **Metode**: Ketuk **"Buka Kamera"** untuk memotret langsung atau **"Pilih Galeri"** untuk memilih foto dari galeri HP.
    - **Mode Skala Default**: **Mode: Fit (Utuh)**. Mode ini mempertahankan 100% tampilan layar monitor ATM tanpa ada kode error di sudut/tepi layar yang terpotong.
 
-2. **Foto 2: Label Kaset Bad (Posisi di Modul)**:
-   - **Objek yang difoto**: Fisik kaset dan stiker label posisi kaset di dalam modul mesin ATM.
+2. **Foto 2: Kaset dengan Label Bad**:
+   - **Objek yang difoto**: Fisik kaset yang memperlihatkan stiker label kaset bad.
    - **Mode Skala Default**: **Mode: Crop (Penuh)**. Foto kaset akan mengisi seluruh sel secara simetris edge-to-edge tanpa celah.
 
 3. **Fitur Cerdas pada Pratinjau Foto**:
@@ -194,9 +194,9 @@ Data yang dikirimkan oleh tim lapangan akan langsung masuk ke spreadsheet master
   - **S/N Kaset**: Serial number kaset (standar `SAB10...`).
   - **Module**: Nomor modul (1–5, Reject, Retract).
   - **Type Mesin**: Merk mesin ATM (Hyosung, Hitachi, OKI, dll.).
-- **Kolom Foto Kaset (Presisi 9,25 cm × 12,31 cm / 350 × 465 px)**:
+- **Kolom Foto Kaset (Presisi Lebar: 12,31 cm × Tinggi: 9,25 cm / 465 × 350 px)**:
   - **Foto Result Test Cash**: Foto layar monitor ATM error code/fatal kaset.
-  - **Foto Label Kaset Bad Posisi di Modul**: Foto fisik kaset & posisi stiker label bad di modul.
+  - **Foto Kaset dengan Label Bad**: Foto fisik kaset yang memperlihatkan stiker label kaset bad.
   - *Dilengkapi nama file terstruktur dan catatan sel (Cell Note) saat sel disorot kursor.*
 - **Kolom Tim CPC / CCAS**:
   - `Cek CPC Alsut` *(Tidak disentuh oleh aplikasi lapangan)*
