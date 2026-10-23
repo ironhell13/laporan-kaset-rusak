@@ -126,8 +126,31 @@ Anda dapat memasukkan Nomor Kaset dengan dua cara:
 
 ---
 
-### Langkah 8: Menyimpan Laporan
-1. Periksa kembali kelengkapan data form, lalu ketuk tombol biru **"Simpan Laporan"**.
+### Langkah 8: Melampirkan 2 Foto Bukti Kaset Rusak (Wajib)
+Sistem mewajibkan melampirkan 2 foto bukti yang akan otomatis dimasukkan langsung ke dalam sel spreadsheet dengan ukuran standar presisi **9,25 cm x 12,31 cm** (350 × 465 px HD Retina, ukuran file ringan ~35–48 KB):
+
+1. **Foto 1: Result Test Cash (Layar ATM Error Code / Fatal Cassette)**:
+   - **Objek yang difoto**: Layar monitor mesin ATM yang menampilkan kode error atau status fatal cassette (*Bukan foto struk kertas*).
+   - **Metode**: Ketuk **"Buka Kamera"** untuk memotret langsung atau **"Pilih Galeri"** untuk memilih foto dari galeri HP.
+   - **Mode Skala Default**: **Mode: Fit (Utuh)**. Mode ini mempertahankan 100% tampilan layar monitor ATM tanpa ada kode error di sudut/tepi layar yang terpotong.
+
+2. **Foto 2: Label Kaset Bad (Posisi di Modul)**:
+   - **Objek yang difoto**: Fisik kaset dan stiker label posisi kaset di dalam modul mesin ATM.
+   - **Mode Skala Default**: **Mode: Crop (Penuh)**. Foto kaset akan mengisi seluruh sel secara simetris edge-to-edge tanpa celah.
+
+3. **Fitur Cerdas pada Pratinjau Foto**:
+   - **🔄 Tombol Putar 90° (Rotate)**: Jika foto diambil dalam posisi miring atau horizontal, ketuk tombol *"Putar 90°"* untuk memutar orientasi foto 90°, 180°, atau 270° secara langsung.
+   - **📐/✂️ Mode Skala Cerdas (Center-Fit vs Center-Crop)**: Anda dapat mengubah mode perataan gambar kapan saja hanya dengan sekali ketuk.
+   - **🏷️ Penamaan File Otomatis & Terstruktur**:
+     Sistem secara otomatis memberi nama file terstruktur sesuai WSID dan Nomor Kaset:
+     - `RESULT_TEST_[WSID]_[NOKASET]_[DATE].jpg`
+     - `LABEL_MODUL_[WSID]_[NOKASET]_[DATE].jpg`
+     *(Contoh: `RESULT_TEST_Z006_WCR2063_20261023_153000.jpg`). Nama ini juga disematkan pada Catatan Sel (Note) dan Alt-Text di spreadsheet.*
+
+---
+
+### Langkah 9: Menyimpan Laporan
+1. Periksa kembali kelengkapan data form dan kedua foto kaset, lalu ketuk tombol biru **"Simpan Laporan"**.
 2. **Deteksi Duplikat Otomatis**:
    - Jika nomor kaset tersebut sudah pernah dilaporkan sebelumnya, sistem akan memunculkan jendela konfirmasi:
      > *"Nomor kaset WCR2063 sudah pernah dilaporkan pada tanggal 22 Okt 2026 untuk WSID Z005. Tetap simpan laporan ini?"*
@@ -135,7 +158,7 @@ Anda dapat memasukkan Nomor Kaset dengan dua cara:
    - Jika salah ketik nomor kaset, ketuk **"Batal"** dan koreksi nomor kaset Anda.
 3. Setelah penyimpanan berhasil:
    - Muncul notifikasi hijau: **"Laporan Berhasil Disimpan"**.
-   - Kolom **Nomor Kaset**, **S/N**, dan **Module** langsung dikosongkan.
+   - Kolom **Nomor Kaset**, **S/N**, **Module**, serta **kedua foto** langsung di-reset bersih siap untuk kaset berikutnya.
    - Kolom **WSID**, **Lokasi**, dan **Type Mesin** **tetap dipertahankan**.
    - Kursor otomatis fokus ke kolom Nomor Kaset, siap untuk input kaset ke-2 dan seterusnya!
 
@@ -163,17 +186,21 @@ Jendela pemindai barcode dilengkapi fitur khusus untuk mempermudah scan pada ber
 Data yang dikirimkan oleh tim lapangan akan langsung masuk ke spreadsheet master:
 
 - **Sheet Target**: `"Format Laporan Kaset Rusak"`
-- **Kolom A sampai G (Diisi Otomatis oleh Aplikasi / Tim PKT)**:
-  - **Kolom A**: WSID
-  - **Kolom B**: Lokasi
-  - **Kolom C**: Tanggal Replenish (Format tanggal Indonesia: `d mmm yyyy`)
-  - **Kolom D**: Nomor Kaset (Barcode Alsut)
-  - **Kolom E**: S/N Kaset (Standard `SAB10...`)
-  - **Kolom F**: Module (1–5, Reject, Retract)
-  - **Kolom G**: Type Mesin (Hyosung, Hitachi, dll.)
-- **Kolom H dan I (Dikhususkan untuk Tim CPC / CCAS)**:
-  - **Kolom H**: `Cek CPC Alsut` *(Tidak disentuh oleh aplikasi lapangan)*
-  - **Kolom I**: `Tgl Bongkaran` *(Tidak disentuh oleh aplikasi lapangan)*
+- **Kolom Teks (Diisi Otomatis oleh Aplikasi / Tim PKT)**:
+  - **WSID**: Kode WSID mesin ATM.
+  - **Lokasi**: Lokasi mesin ATM (otomatis sesuai master WSID).
+  - **Tanggal Replenish**: Format tanggal Indonesia: `d mmm yyyy`.
+  - **Nomor Kaset**: Nomor barcode Alsut kaset.
+  - **S/N Kaset**: Serial number kaset (standar `SAB10...`).
+  - **Module**: Nomor modul (1–5, Reject, Retract).
+  - **Type Mesin**: Merk mesin ATM (Hyosung, Hitachi, OKI, dll.).
+- **Kolom Foto Kaset (Presisi 9,25 cm × 12,31 cm / 350 × 465 px)**:
+  - **Foto Result Test Cash**: Foto layar monitor ATM error code/fatal kaset.
+  - **Foto Label Kaset Bad Posisi di Modul**: Foto fisik kaset & posisi stiker label bad di modul.
+  - *Dilengkapi nama file terstruktur dan catatan sel (Cell Note) saat sel disorot kursor.*
+- **Kolom Tim CPC / CCAS**:
+  - `Cek CPC Alsut` *(Tidak disentuh oleh aplikasi lapangan)*
+  - `Tgl Bongkaran` *(Tidak disentuh oleh aplikasi lapangan)*
 
 ---
 

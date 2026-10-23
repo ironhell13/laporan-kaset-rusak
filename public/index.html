@@ -744,6 +744,286 @@
       background-color: #ea580c;
       color: #ffffff;
     }
+
+    /* =========================================================================
+       PHOTO UPLOAD & SMART PREVIEW CARDS (9,25 x 12,31 cm - HD RETINA)
+       ========================================================================= */
+    .photo-upload-group {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .photo-upload-group:focus-within {
+      border-color: #93c5fd;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+    }
+
+    .photo-header {
+      margin-bottom: 12px;
+    }
+
+    .photo-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .photo-subbadge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .subbadge-atm {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .subbadge-modul {
+      background-color: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    .photo-hint {
+      display: block;
+      font-size: 0.8rem;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* DROPZONE (TAMPIL SAAT BELUM ADA FOTO) */
+    .photo-dropzone {
+      background-color: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 20px 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .photo-dropzone:hover {
+      border-color: #3b82f6;
+      background-color: #f0f7ff;
+    }
+
+    .photo-dropzone-icon {
+      color: #2563eb;
+      background-color: #eff6ff;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .photo-dropzone-prompt {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .photo-action-buttons {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .btn-photo-action {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-photo-camera {
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-photo-camera:hover {
+      background-color: #1d4ed8;
+    }
+
+    .btn-photo-camera:active {
+      transform: scale(0.98);
+    }
+
+    .btn-photo-gallery {
+      background-color: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-photo-gallery:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .btn-photo-gallery:active {
+      background-color: #e2e8f0;
+      transform: scale(0.98);
+    }
+
+    /* PREVIEW CARD & CONTROLS */
+    .photo-preview-card {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .photo-preview-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 240px;
+      margin: 0 auto;
+      aspect-ratio: 350 / 465;
+      background-color: #0f172a;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .photo-preview-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+
+    .photo-status-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: rgba(16, 185, 129, 0.92);
+      color: #ffffff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* CONTROLS TOOLBAR */
+    .photo-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn-tool {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .btn-tool:hover {
+      background-color: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .btn-tool:active {
+      transform: scale(0.97);
+    }
+
+    .btn-tool.active-mode {
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      border-color: #3b82f6;
+    }
+
+    .btn-tool-danger {
+      color: #dc2626;
+      border-color: #fecaca;
+      background-color: #fef2f2;
+    }
+
+    .btn-tool-danger:hover {
+      background-color: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .tool-sub {
+      background-color: #e2e8f0;
+      color: #475569;
+      font-size: 0.72rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .photo-info-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .photo-struct-name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.72rem;
+      color: #0369a1;
+      background-color: #f0f9ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #bae6fd;
+    }
   </style>
 </head>
 <body>
@@ -936,6 +1216,189 @@
             </span>
           </div>
           <div class="field-error" id="error-typeMesin">Silakan pilih type mesin.</div>
+        </div>
+
+        <!-- 8. FOTO RESULT TEST CASH (LAYAR ATM ERROR CODE / FATAL) -->
+        <div class="photo-upload-group" id="group-fotoTestCash">
+          <div class="photo-header">
+            <div class="photo-title-wrap">
+              <label class="form-label" style="margin-bottom: 0;">
+                Foto Result Test Cash <span class="required">*</span>
+              </label>
+              <span class="photo-subbadge subbadge-atm">Layar ATM Error Code / Fatal</span>
+            </div>
+            <span class="photo-hint">Ambil foto layar monitor ATM yang memperlihatkan kode error atau status fatal cassette.</span>
+          </div>
+
+          <!-- Dropzone ketika belum ada foto -->
+          <div class="photo-dropzone" id="dropzone_fotoTestCash">
+            <div class="photo-dropzone-icon">
+              <!-- Monitor Screen SVG -->
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <div class="photo-dropzone-prompt">Pilih metode pengambilan foto:</div>
+            <div class="photo-action-buttons">
+              <button type="button" class="btn-photo-action btn-photo-camera" onclick="triggerPhotoInput('fotoTestCash', 'camera')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>Buka Kamera</span>
+              </button>
+              <button type="button" class="btn-photo-action btn-photo-gallery" onclick="triggerPhotoInput('fotoTestCash', 'gallery')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>Pilih Galeri</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview & Controls ketika foto sudah diambil -->
+          <div class="photo-preview-card" id="previewCard_fotoTestCash" style="display: none;">
+            <div class="photo-preview-wrapper">
+              <img id="previewImg_fotoTestCash" class="photo-preview-img" alt="Pratinjau Layar ATM">
+              <span class="photo-status-badge">Rapi ✓ 9,25 × 12,31 cm</span>
+            </div>
+
+            <!-- Toolbar Kontrol: Putar 90°, Toggle Mode Skala, Ganti Foto -->
+            <div class="photo-toolbar">
+              <button type="button" class="btn-tool" onclick="rotatePhoto('fotoTestCash')" title="Putar 90°">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Putar 90°</span>
+                <span class="tool-sub" id="rotDeg_fotoTestCash">0°</span>
+              </button>
+
+              <button type="button" class="btn-tool active-mode" id="btnScale_fotoTestCash" onclick="toggleScaleMode('fotoTestCash')" title="Ubah Skala (Fit / Crop)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <polyline points="9 21 3 21 3 15"></polyline>
+                  <line x1="21" y1="3" x2="14" y2="10"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+                <span id="scaleLabel_fotoTestCash">Mode: Fit (Utuh)</span>
+              </button>
+
+              <button type="button" class="btn-tool btn-tool-danger" onclick="removePhoto('fotoTestCash')" title="Hapus / Ambil Ulang">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Ganti</span>
+              </button>
+            </div>
+
+            <div class="photo-info-footer">
+              <span id="photoInfo_fotoTestCash">Presisi HD • ~40 KB</span>
+              <span class="photo-struct-name" id="photoStruct_fotoTestCash">RESULT_TEST_...</span>
+            </div>
+          </div>
+
+          <!-- Hidden File Inputs -->
+          <input type="file" id="inputCam_fotoTestCash" accept="image/*" capture="environment" style="display: none;" onchange="handleFilePicked('fotoTestCash', this)">
+          <input type="file" id="inputGal_fotoTestCash" accept="image/*" style="display: none;" onchange="handleFilePicked('fotoTestCash', this)">
+          <div class="field-error" id="error-fotoTestCash">Foto result test cash (layar ATM) belum dilampirkan.</div>
+        </div>
+
+        <!-- 9. FOTO LABEL KASET BAD (POSISI DI MODUL) -->
+        <div class="photo-upload-group" id="group-fotoLabelBad">
+          <div class="photo-header">
+            <div class="photo-title-wrap">
+              <label class="form-label" style="margin-bottom: 0;">
+                Foto Label Kaset Bad <span class="required">*</span>
+              </label>
+              <span class="photo-subbadge subbadge-modul">Posisi di Modul ATM</span>
+            </div>
+            <span class="photo-hint">Ambil foto fisik kaset dan stiker label posisi kaset di dalam modul ATM.</span>
+          </div>
+
+          <!-- Dropzone ketika belum ada foto -->
+          <div class="photo-dropzone" id="dropzone_fotoLabelBad">
+            <div class="photo-dropzone-icon">
+              <!-- Module / Cassette SVG -->
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <div class="photo-dropzone-prompt">Pilih metode pengambilan foto:</div>
+            <div class="photo-action-buttons">
+              <button type="button" class="btn-photo-action btn-photo-camera" onclick="triggerPhotoInput('fotoLabelBad', 'camera')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>Buka Kamera</span>
+              </button>
+              <button type="button" class="btn-photo-action btn-photo-gallery" onclick="triggerPhotoInput('fotoLabelBad', 'gallery')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>Pilih Galeri</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview & Controls ketika foto sudah diambil -->
+          <div class="photo-preview-card" id="previewCard_fotoLabelBad" style="display: none;">
+            <div class="photo-preview-wrapper">
+              <img id="previewImg_fotoLabelBad" class="photo-preview-img" alt="Pratinjau Label Kaset Modul">
+              <span class="photo-status-badge">Rapi ✓ 9,25 × 12,31 cm</span>
+            </div>
+
+            <!-- Toolbar Kontrol: Putar 90°, Toggle Mode Skala, Ganti Foto -->
+            <div class="photo-toolbar">
+              <button type="button" class="btn-tool" onclick="rotatePhoto('fotoLabelBad')" title="Putar 90°">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Putar 90°</span>
+                <span class="tool-sub" id="rotDeg_fotoLabelBad">0°</span>
+              </button>
+
+              <button type="button" class="btn-tool" id="btnScale_fotoLabelBad" onclick="toggleScaleMode('fotoLabelBad')" title="Ubah Skala (Fit / Crop)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <polyline points="9 21 3 21 3 15"></polyline>
+                  <line x1="21" y1="3" x2="14" y2="10"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+                <span id="scaleLabel_fotoLabelBad">Mode: Crop (Penuh)</span>
+              </button>
+
+              <button type="button" class="btn-tool btn-tool-danger" onclick="removePhoto('fotoLabelBad')" title="Hapus / Ambil Ulang">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Ganti</span>
+              </button>
+            </div>
+
+            <div class="photo-info-footer">
+              <span id="photoInfo_fotoLabelBad">Presisi HD • ~40 KB</span>
+              <span class="photo-struct-name" id="photoStruct_fotoLabelBad">LABEL_MODUL_...</span>
+            </div>
+          </div>
+
+          <!-- Hidden File Inputs -->
+          <input type="file" id="inputCam_fotoLabelBad" accept="image/*" capture="environment" style="display: none;" onchange="handleFilePicked('fotoLabelBad', this)">
+          <input type="file" id="inputGal_fotoLabelBad" accept="image/*" style="display: none;" onchange="handleFilePicked('fotoLabelBad', this)">
+          <div class="field-error" id="error-fotoLabelBad">Foto label kaset bad (posisi modul) belum dilampirkan.</div>
         </div>
 
         <!-- TOMBOL AKSI -->
@@ -1233,10 +1696,12 @@
       const query = this.value.trim();
       renderWsidSuggestions(query);
       autofillLokasiFromWsid(query);
+      updateAllStructuredPhotoBadges();
     });
 
     inputWsid.addEventListener("change", function() {
       autofillLokasiFromWsid(this.value.trim());
+      updateAllStructuredPhotoBadges();
     });
 
     inputWsid.addEventListener("focus", function() {
@@ -1310,6 +1775,7 @@
 
       localStorage.setItem("LAST_WSID", wsid);
       localStorage.setItem("LAST_LOKASI", lokasi || "");
+      updateAllStructuredPhotoBadges();
 
       // Fokus otomatis lanjut ke Nomor Kaset
       inputNomorKaset.focus();
@@ -1340,6 +1806,7 @@
     inputNomorKaset.addEventListener("input", function() {
       this.value = this.value.toUpperCase();
       clearFieldError("nomorKaset");
+      updateAllStructuredPhotoBadges();
     });
 
     inputSn.addEventListener("blur", function() {
@@ -1543,6 +2010,260 @@
     }
 
     // =========================================================================
+    // STATE & LOGIKA FOTO (9,25 x 12,31 cm - HD RETINA)
+    // - Tombol Putar 90° (Rotate)
+    // - Mode Skala Cerdas (Center-Fit vs Center-Crop)
+    // - Penamaan File Foto Otomatis & Terstruktur
+    // =========================================================================
+    const PHOTO_CONFIG = {
+      TARGET_WIDTH: 700,    // Retina 2x untuk 350 px (9,25 cm)
+      TARGET_HEIGHT: 930,   // Retina 2x untuk 465 px (12,31 cm)
+      JPEG_QUALITY: 0.85    // Kompresi optimal: sangat tajam, ukuran ~35-48 KB
+    };
+
+    const photoState = {
+      fotoTestCash: {
+        rawImg: null,
+        rotation: 0,
+        scaleMode: "fit", // Default Fit untuk layar monitor ATM agar error code di sudut tidak terpotong
+        optimizedBase64: null,
+        structuredFilename: ""
+      },
+      fotoLabelBad: {
+        rawImg: null,
+        rotation: 0,
+        scaleMode: "crop", // Default Crop untuk kaset agar gambar mengisi penuh sel
+        optimizedBase64: null,
+        structuredFilename: ""
+      }
+    };
+
+    function triggerPhotoInput(photoKey, source) {
+      const inputId = source === "camera" ? "inputCam_" + photoKey : "inputGal_" + photoKey;
+      const el = document.getElementById(inputId);
+      if (el) {
+        el.click();
+      }
+    }
+
+    function handleFilePicked(photoKey, inputEl) {
+      if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
+      const file = inputEl.files[0];
+
+      if (!file.type.match(/^image\//i)) {
+        showToast("Bukan Gambar", "File yang dipilih harus berupa file gambar.", "error");
+        inputEl.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const state = photoState[photoKey];
+          state.rawImg = img;
+          state.rotation = 0; // Reset rotasi ke 0 saat gambar baru dipilih
+          renderPhotoCanvas(photoKey);
+          clearFieldError(photoKey);
+        };
+        img.onerror = function() {
+          showToast("Gagal Membaca", "File gambar rusak atau tidak dapat dimuat.", "error");
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = function() {
+        showToast("Error", "Gagal membaca file dari penyimpanan.", "error");
+      };
+      reader.readAsDataURL(file);
+
+      // Reset value agar memilih file yang sama bisa memicu event onchange kembali
+      inputEl.value = "";
+    }
+
+    /**
+     * Algoritma Skala Cerdas & Rotasi Dinamis pada Kanvas
+     */
+    function drawRotatedAndScaledImage(ctx, img, rotationAngle, scaleMode, targetW, targetH) {
+      ctx.clearRect(0, 0, targetW, targetH);
+
+      // Background canvas
+      if (scaleMode === "fit") {
+        // Latar gelap netral elegan ala bingkai monitor ATM agar kontras teks error code maksimal
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(0, 0, targetW, targetH);
+      } else {
+        // Mode crop mengisi penuh kanvas tanpa celah
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, targetW, targetH);
+      }
+
+      ctx.save();
+      // Pindahkan titik pusat ke tengah kanvas
+      ctx.translate(targetW / 2, targetH / 2);
+      ctx.rotate((rotationAngle * Math.PI) / 180);
+
+      // Hitung batas bounding box pada bidang koordinat terotasi
+      const isRotated90or270 = (rotationAngle % 180 !== 0);
+      const boundW = isRotated90or270 ? targetH : targetW;
+      const boundH = isRotated90or270 ? targetW : targetH;
+
+      const srcW = img.naturalWidth || img.width;
+      const srcH = img.naturalHeight || img.height;
+      const srcRatio = srcW / srcH;
+      const boundRatio = boundW / boundH;
+
+      let drawW, drawH;
+      if (scaleMode === "crop") {
+        // Center-Crop: Cover seluruh bidang tanpa margin
+        if (srcRatio >= boundRatio) {
+          drawH = boundH;
+          drawW = Math.ceil(boundH * srcRatio);
+        } else {
+          drawW = boundW;
+          drawH = Math.ceil(boundW / srcRatio);
+        }
+      } else {
+        // Center-Fit: Seluruh gambar masuk tanpa terpotong (100% utuh)
+        if (srcRatio >= boundRatio) {
+          drawW = boundW;
+          drawH = Math.ceil(boundW / srcRatio);
+        } else {
+          drawH = boundH;
+          drawW = Math.ceil(boundH * srcRatio);
+        }
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    }
+
+    /**
+     * Format nama file foto terstruktur otomatis
+     * Contoh: RESULT_TEST_Z006_WCR2063.jpg atau LABEL_MODUL_Z006_WCR2063.jpg
+     */
+    function getStructuredPhotoFilename(photoKey) {
+      const prefix = photoKey === "fotoTestCash" ? "RESULT_TEST" : "LABEL_MODUL";
+      const wsid = (inputWsid.value.trim().toUpperCase() || "WSID").replace(/[^A-Z0-9]/g, "");
+      const kaset = (inputNomorKaset.value.trim().toUpperCase() || "NOKASET").replace(/[^A-Z0-9]/g, "");
+      return `${prefix}_${wsid}_${kaset}.jpg`;
+    }
+
+    function updateAllStructuredPhotoBadges() {
+      ["fotoTestCash", "fotoLabelBad"].forEach(key => {
+        const badge = document.getElementById("photoStruct_" + key);
+        if (badge) {
+          const fn = getStructuredPhotoFilename(key);
+          photoState[key].structuredFilename = fn;
+          badge.textContent = fn;
+        }
+      });
+    }
+
+    /**
+     * Render Kanvas dan perbarui Pratinjau
+     */
+    function renderPhotoCanvas(photoKey) {
+      const state = photoState[photoKey];
+      if (!state.rawImg) return;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = PHOTO_CONFIG.TARGET_WIDTH;
+      canvas.height = PHOTO_CONFIG.TARGET_HEIGHT;
+      const ctx = canvas.getContext("2d");
+
+      drawRotatedAndScaledImage(
+        ctx,
+        state.rawImg,
+        state.rotation,
+        state.scaleMode,
+        PHOTO_CONFIG.TARGET_WIDTH,
+        PHOTO_CONFIG.TARGET_HEIGHT
+      );
+
+      const optimizedBase64 = canvas.toDataURL("image/jpeg", PHOTO_CONFIG.JPEG_QUALITY);
+      state.optimizedBase64 = optimizedBase64;
+      state.structuredFilename = getStructuredPhotoFilename(photoKey);
+
+      // Hitung ukuran payload dalam KB
+      const sizeKb = Math.round((optimizedBase64.length * 3 / 4) / 1024);
+
+      // Update elemen UI
+      const dropzone = document.getElementById("dropzone_" + photoKey);
+      const previewCard = document.getElementById("previewCard_" + photoKey);
+      const previewImg = document.getElementById("previewImg_" + photoKey);
+      const rotDeg = document.getElementById("rotDeg_" + photoKey);
+      const scaleLabel = document.getElementById("scaleLabel_" + photoKey);
+      const btnScale = document.getElementById("btnScale_" + photoKey);
+      const photoInfo = document.getElementById("photoInfo_" + photoKey);
+      const photoStruct = document.getElementById("photoStruct_" + photoKey);
+
+      if (dropzone) dropzone.style.display = "none";
+      if (previewCard) previewCard.style.display = "flex";
+      if (previewImg) previewImg.src = optimizedBase64;
+      if (rotDeg) rotDeg.textContent = state.rotation + "°";
+
+      if (scaleLabel) {
+        scaleLabel.textContent = state.scaleMode === "fit" ? "Mode: Fit (Utuh)" : "Mode: Crop (Penuh)";
+      }
+      if (btnScale) {
+        if (state.scaleMode === "fit") {
+          btnScale.classList.add("active-mode");
+        } else {
+          btnScale.classList.remove("active-mode");
+        }
+      }
+
+      if (photoInfo) {
+        const modeTxt = state.scaleMode === "fit" ? "Fit" : "Crop";
+        photoInfo.textContent = `9,25×12,31 cm (${sizeKb} KB) • Rot: ${state.rotation}° • ${modeTxt}`;
+      }
+      if (photoStruct) {
+        photoStruct.textContent = state.structuredFilename;
+      }
+    }
+
+    /**
+     * Tombol Putar 90° (Rotate)
+     */
+    function rotatePhoto(photoKey) {
+      const state = photoState[photoKey];
+      if (!state.rawImg) return;
+      state.rotation = (state.rotation + 90) % 360;
+      renderPhotoCanvas(photoKey);
+    }
+
+    /**
+     * Mode Skala Cerdas (Center-Fit vs Center-Crop)
+     */
+    function toggleScaleMode(photoKey) {
+      const state = photoState[photoKey];
+      if (!state.rawImg) return;
+      state.scaleMode = state.scaleMode === "fit" ? "crop" : "fit";
+      renderPhotoCanvas(photoKey);
+    }
+
+    /**
+     * Hapus / Ganti Foto
+     */
+    function removePhoto(photoKey) {
+      const state = photoState[photoKey];
+      state.rawImg = null;
+      state.optimizedBase64 = null;
+      state.rotation = 0;
+      state.structuredFilename = "";
+
+      const dropzone = document.getElementById("dropzone_" + photoKey);
+      const previewCard = document.getElementById("previewCard_" + photoKey);
+      const previewImg = document.getElementById("previewImg_" + photoKey);
+
+      if (dropzone) dropzone.style.display = "flex";
+      if (previewCard) previewCard.style.display = "none";
+      if (previewImg) previewImg.src = "";
+    }
+
+    // =========================================================================
     // VALIDASI FORM CLIENT
     // =========================================================================
     function setFieldError(fieldId, isError) {
@@ -1612,6 +2333,22 @@
         setFieldError("typeMesin", false);
       }
 
+      // Validasi Foto 1: Result Test Cash (Layar ATM Error Code / Fatal)
+      if (!photoState.fotoTestCash.optimizedBase64) {
+        setFieldError("fotoTestCash", true);
+        isValid = false;
+      } else {
+        setFieldError("fotoTestCash", false);
+      }
+
+      // Validasi Foto 2: Label Kaset Bad (Posisi di Modul)
+      if (!photoState.fotoLabelBad.optimizedBase64) {
+        setFieldError("fotoLabelBad", true);
+        isValid = false;
+      } else {
+        setFieldError("fotoLabelBad", false);
+      }
+
       return isValid;
     }
 
@@ -1622,7 +2359,7 @@
       e.preventDefault();
 
       if (!validateClientForm()) {
-        showToast("Form Belum Lengkap", "Mohon lengkapi semua kolom yang bertanda bintang (*).", "error");
+        showToast("Form Belum Lengkap", "Mohon lengkapi semua data dan lampirkan kedua foto kaset (*).", "error");
         return;
       }
 
@@ -1633,6 +2370,8 @@
         sn: normalizeSN(inputSn.value),
         module: selectModule.value.trim(),
         typeMesin: selectTypeMesin.value.trim(),
+        fotoTestCash: photoState.fotoTestCash.optimizedBase64 || null,
+        fotoLabelBad: photoState.fotoLabelBad.optimizedBase64 || null,
         allowDuplicate: false
       };
 
@@ -1694,15 +2433,20 @@
       localStorage.setItem("LAST_LOKASI", payload.lokasi);
       localStorage.setItem("LAST_TYPE_MESIN", payload.typeMesin);
 
-      // Kosongkan Nomor Kaset, S/N, dan Module agar siap input kaset berikutnya
+      // Kosongkan Nomor Kaset, S/N, Module, dan kedua foto agar siap input kaset berikutnya
       inputNomorKaset.value = "";
       inputSn.value = "";
       selectModule.value = "";
       warningSn.style.display = "none";
 
+      removePhoto("fotoTestCash");
+      removePhoto("fotoLabelBad");
+
       clearFieldError("nomorKaset");
       clearFieldError("sn");
       clearFieldError("module");
+      clearFieldError("fotoTestCash");
+      clearFieldError("fotoLabelBad");
 
       // Fokus langsung ke field Nomor Kaset
       inputNomorKaset.focus();
@@ -1734,7 +2478,10 @@
       selectModule.value = "";
       warningSn.style.display = "none";
 
-      ["wsid", "lokasi", "nomorKaset", "sn", "module", "typeMesin"].forEach(clearFieldError);
+      removePhoto("fotoTestCash");
+      removePhoto("fotoLabelBad");
+
+      ["wsid", "lokasi", "nomorKaset", "sn", "module", "typeMesin", "fotoTestCash", "fotoLabelBad"].forEach(clearFieldError);
       inputWsid.focus();
     }
 
