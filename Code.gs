@@ -36,9 +36,15 @@ const CONFIG = {
   SN_NORMALIZE: true,
   SN_PREFIX: "SAB10",
 
-  // Dimensi foto pada sel Spreadsheet (Lebar: 12,31 cm x Tinggi: 9,25 cm pada 96 DPI)
-  PHOTO_CELL_WIDTH: 465,   // Lebar: 12,31 cm = ~465 pixel
-  PHOTO_CELL_HEIGHT: 350   // Tinggi: 9,25 cm = ~350 pixel
+  // Dimensi foto (Lebar: 12,31 cm x Tinggi: 9,25 cm pada 96 DPI)
+  PHOTO_WIDTH: 465,        // Lebar foto = 465 pixel
+  PHOTO_HEIGHT: 350,       // Tinggi foto = 350 pixel
+
+  // Dimensi sel Spreadsheet (dibesarkan sedikit agar foto rapi dan tidak dempet dengan garis batas sel)
+  PHOTO_CELL_WIDTH: 495,   // Lebar kolom sel (foto 465 px + margin kiri-kanan 30 px)
+  PHOTO_CELL_HEIGHT: 375,  // Tinggi baris sel (foto 350 px + margin atas-bawah 25 px)
+  PHOTO_OFFSET_X: 15,      // Jarak offset horizontal dari garis batas kiri sel (15 pixel)
+  PHOTO_OFFSET_Y: 12       // Jarak offset vertikal dari garis batas atas sel (12 pixel)
 };
 
 /**
@@ -378,16 +384,27 @@ function generateSafePhotoFilename(typePrefix, wsid, nomorKaset) {
 
 /**
  * Menyisipkan gambar OverGridImage tepat pada kolom dan baris target
- * dengan nama file otomatis & terstruktur serta cell note
+ * dengan nama file otomatis & terstruktur, cell note, serta offset padding rapi
  */
-function insertImageWithRetry(sheet, blob, col, row, width, height, filename, noteInfo) {
+function insertImageWithRetry(sheet, blob, col, row, width, height, filename, noteInfo, offsetX, offsetY) {
   var maxAttempts = 2;
+  var offX = (typeof offsetX === "number") ? offsetX : (CONFIG.PHOTO_OFFSET_X || 15);
+  var offY = (typeof offsetY === "number") ? offsetY : (CONFIG.PHOTO_OFFSET_Y || 12);
+
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       // Pastikan sel kosong dari teks agar gambar tampil rapi
       sheet.getRange(row, col).setValue("");
 
-      var img = sheet.insertImage(blob, col, row);
+      // Sisipkan gambar dengan offset agar memiliki padding rapi dari garis batas sel
+      var img = null;
+      try {
+        img = sheet.insertImage(blob, col, row, offX, offY);
+      } catch (insertErr) {
+        // Fallback jika versi spreadsheet hanya menerima 3 parameter
+        img = sheet.insertImage(blob, col, row);
+      }
+
       if (img) {
         try {
           if (width) img.setWidth(width);
@@ -607,7 +624,7 @@ function saveReport(payload) {
     reportSheet.getRange(targetRow, 1, 1, maxColsToWrite).setValues([rowValues]);
     reportSheet.getRange(targetRow, colMap.tanggal).setNumberFormat(CONFIG.DATE_NUMBER_FORMAT);
 
-    // 7. Atur dimensi sel presisi Lebar: 12,31 cm x Tinggi: 9,25 cm
+    // 7. Atur dimensi sel spreadsheet (dibesarkan sedikit agar foto rapi & tidak dempet garis batas sel)
     reportSheet.setRowHeight(targetRow, CONFIG.PHOTO_CELL_HEIGHT);
     if (colMap.fotoTestCash) {
       reportSheet.setColumnWidth(colMap.fotoTestCash, CONFIG.PHOTO_CELL_WIDTH);
@@ -616,15 +633,20 @@ function saveReport(payload) {
       reportSheet.setColumnWidth(colMap.fotoLabelBad, CONFIG.PHOTO_CELL_WIDTH);
     }
 
-    // 8. Sisipkan kedua foto langsung ke koordinat sel masing-masing
+    // 8. Sisipkan kedua foto langsung ke koordinat sel masing-masing dengan offset rapi
     var dateFormattedStr = formatIndonesianDate(serverDate);
+    var pWidth = CONFIG.PHOTO_WIDTH || 465;
+    var pHeight = CONFIG.PHOTO_HEIGHT || 350;
+    var pOffsetX = CONFIG.PHOTO_OFFSET_X || 15;
+    var pOffsetY = CONFIG.PHOTO_OFFSET_Y || 12;
+
     if (blobTestCash && colMap.fotoTestCash) {
       var note1 = "File: " + fn1 + "\nKategori: Result Test Cash (Layar ATM Error Code/Fatal)\nWSID: " + wsid + "\nNomor Kaset: " + nomorKaset + "\nTanggal: " + dateFormattedStr;
-      insertImageWithRetry(reportSheet, blobTestCash, colMap.fotoTestCash, targetRow, CONFIG.PHOTO_CELL_WIDTH, CONFIG.PHOTO_CELL_HEIGHT, fn1, note1);
+      insertImageWithRetry(reportSheet, blobTestCash, colMap.fotoTestCash, targetRow, pWidth, pHeight, fn1, note1, pOffsetX, pOffsetY);
     }
     if (blobLabelBad && colMap.fotoLabelBad) {
       var note2 = "File: " + fn2 + "\nKategori: Kaset dengan Label Bad\nWSID: " + wsid + "\nNomor Kaset: " + nomorKaset + "\nTanggal: " + dateFormattedStr;
-      insertImageWithRetry(reportSheet, blobLabelBad, colMap.fotoLabelBad, targetRow, CONFIG.PHOTO_CELL_WIDTH, CONFIG.PHOTO_CELL_HEIGHT, fn2, note2);
+      insertImageWithRetry(reportSheet, blobLabelBad, colMap.fotoLabelBad, targetRow, pWidth, pHeight, fn2, note2, pOffsetX, pOffsetY);
     }
 
     // Lepas lock secepatnya setelah penulisan selesai

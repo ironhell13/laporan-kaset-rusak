@@ -127,7 +127,7 @@ Anda dapat memasukkan Nomor Kaset dengan dua cara:
 ---
 
 ### Langkah 8: Melampirkan 2 Foto Bukti Kaset Rusak (Wajib)
-Sistem mewajibkan melampirkan 2 foto bukti yang akan otomatis dimasukkan langsung ke dalam sel spreadsheet dengan ukuran standar presisi **Lebar: 12,31 cm x Tinggi: 9,25 cm** (465 × 350 px pada Spreadsheet / 930 × 700 px HD Retina, ukuran file ringan ~35–48 KB):
+Sistem mewajibkan melampirkan 2 foto bukti yang akan otomatis dimasukkan langsung ke dalam sel spreadsheet dengan ukuran standar presisi **Lebar: 12,31 cm x Tinggi: 9,25 cm** (465 × 350 px pada Spreadsheet / 930 × 700 px HD Retina, ukuran file ringan ~35–48 KB). Sel spreadsheet otomatis diberi ruang margin/padding (lebar kolom 495 px, tinggi baris 375 px) agar foto tertata rapi di tengah sel dan tidak menempel pada garis batas sel:
 
 1. **Foto 1: Result Test Cash (Layar ATM Error Code / Fatal Cassette)**:
    - **Objek yang difoto**: Layar monitor mesin ATM yang menampilkan kode error atau status fatal cassette (*Bukan foto struk kertas*).
@@ -194,10 +194,10 @@ Data yang dikirimkan oleh tim lapangan akan langsung masuk ke spreadsheet master
   - **S/N Kaset**: Serial number kaset (standar `SAB10...`).
   - **Module**: Nomor modul (1–5, Reject, Retract).
   - **Type Mesin**: Merk mesin ATM (Hyosung, Hitachi, OKI, dll.).
-- **Kolom Foto Kaset (Presisi Lebar: 12,31 cm × Tinggi: 9,25 cm / 465 × 350 px)**:
+- **Kolom Foto Kaset (Presisi Foto 465 × 350 px, Sel Berjarak 495 × 375 px)**:
   - **Foto Result Test Cash**: Foto layar monitor ATM error code/fatal kaset.
   - **Foto Kaset dengan Label Bad**: Foto fisik kaset yang memperlihatkan stiker label kaset bad.
-  - *Dilengkapi nama file terstruktur dan catatan sel (Cell Note) saat sel disorot kursor.*
+  - *Dilengkapi nama file terstruktur, margin/padding 15 px kiri-kanan & 12 px atas-bawah, serta catatan sel (Cell Note).*
 - **Kolom Tim CPC / CCAS**:
   - `Cek CPC Alsut` *(Tidak disentuh oleh aplikasi lapangan)*
   - `Tgl Bongkaran` *(Tidak disentuh oleh aplikasi lapangan)*
