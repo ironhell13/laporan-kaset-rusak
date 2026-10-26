@@ -684,3 +684,23 @@ function saveReport(payload) {
     }
   }
 }
+
+/**
+ * Helper utilitas untuk otomatis mengubah nama header di spreadsheet
+ * Jalankan fungsi ini dari dropdown Google Apps Script jika tidak ingin mengganti manual di spreadsheet.
+ */
+function updateHeaderSpreadsheet() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+  if (!sheet) {
+    Logger.log("Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan.");
+    return "Sheet tidak ditemukan";
+  }
+  var colMap = getReportColumnMapping(sheet);
+  if (colMap.tanggal) {
+    sheet.getRange(CONFIG.HEADER_ROW, colMap.tanggal).setValue("Tanggal Sislok / Bongkaran");
+    Logger.log("Header baris " + CONFIG.HEADER_ROW + " kolom " + colMap.tanggal + " berhasil diubah menjadi: Tanggal Sislok / Bongkaran");
+    return "Berhasil memperbarui header menjadi: Tanggal Sislok / Bongkaran";
+  }
+  return "Kolom tanggal tidak ditemukan.";
+}
