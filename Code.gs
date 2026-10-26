@@ -462,15 +462,16 @@ function getReportColumnMapping(sheet) {
     var colIdx = c + 1;
     if (/wsid/i.test(txt)) map.wsid = colIdx;
     else if (/lokasi/i.test(txt)) map.lokasi = colIdx;
-    else if (/replenish|tgl.*replenish|tanggal/i.test(txt)) map.tanggal = colIdx;
+    else if (/sislok|replenish|tgl.*replenish/i.test(txt)) map.tanggal = colIdx;
     else if (/nomor.*kaset|barcode.*alsut|no.*kaset/i.test(txt)) map.nomorKaset = colIdx;
     else if (/s\/n|serial/i.test(txt)) map.sn = colIdx;
     else if (/module/i.test(txt)) map.module = colIdx;
     else if (/type.*mesin|tipe.*mesin/i.test(txt)) map.typeMesin = colIdx;
     else if (/result|test.*cash|fatal|layar/i.test(txt)) map.fotoTestCash = colIdx;
-    else if (/label.*kaset|posisi.*modul|bad.*posisi/i.test(txt)) map.fotoLabelBad = colIdx;
+    else if (/label.*kaset|posisi.*modul|bad.*posisi|kaset.*label/i.test(txt)) map.fotoLabelBad = colIdx;
     else if (/cek.*cpc/i.test(txt)) map.cekCpc = colIdx;
-    else if (/tgl.*bongkaran|bongkaran/i.test(txt)) map.tglBongkaran = colIdx;
+    else if (/tgl.*bongkaran|^bongkaran/i.test(txt)) map.tglBongkaran = colIdx;
+    else if (/tanggal|tgl/i.test(txt)) map.tanggal = colIdx;
   }
 
   return map;

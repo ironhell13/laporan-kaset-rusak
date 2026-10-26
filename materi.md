@@ -8,6 +8,9 @@ Dokumen ini berisi panduan lengkap mengenai alur (*workflow*), fitur-fitur utama
 
 Aplikasi **Laporan Kaset Alsut** adalah platform web *mobile-friendly* (PWA) berkecepatan tinggi yang dirancang khusus untuk mempermudah pencatatan kaset ATM/CRM yang mengalami kerusakan atau masalah saat proses *replenish* di lokasi mesin.
 
+> ⚠️ **Catatan Penting Penginputan:**  
+> Penginputan link ini ditujukan khusus untuk pelaporan **KASET SISLOK** yang ditemukan rusak agar tidak terjadi kesalahan input.
+
 ### Keunggulan Utama Sistem:
 1. **Bebas Hambatan Login**: Tim lapangan dapat langsung membuka aplikasi tanpa perlu login akun Google.
 2. **Scanner Kamera Native**: Mendukung pemindaian langsung barcode batang (1D) dan QR Code (2D) dengan reticle presisi dan fitur senter (*flashlight*).
@@ -80,8 +83,8 @@ flowchart TD
 
 ---
 
-### Langkah 3: Tanggal Replenish
-- Kolom **Tanggal Replenish** otomatis terisi tanggal hari ini (WIB / Asia-Jakarta).
+### Langkah 3: Tanggal Sislok / Bongkaran
+- Kolom **Tanggal Sislok / Bongkaran** otomatis terisi tanggal hari ini (WIB / Asia-Jakarta).
 - Kolom ini bersifat *read-only* untuk menjamin konsistensi data waktu pelaporan.
 
 ---
@@ -189,7 +192,7 @@ Data yang dikirimkan oleh tim lapangan akan langsung masuk ke spreadsheet master
 - **Kolom Teks (Diisi Otomatis oleh Aplikasi / Tim PKT)**:
   - **WSID**: Kode WSID mesin ATM.
   - **Lokasi**: Lokasi mesin ATM (otomatis sesuai master WSID).
-  - **Tanggal Replenish**: Format tanggal Indonesia: `d mmm yyyy`.
+  - **Tanggal Sislok / Bongkaran**: Format tanggal Indonesia: `d mmm yyyy`.
   - **Nomor Kaset**: Nomor barcode Alsut kaset.
   - **S/N Kaset**: Serial number kaset (standar `SAB10...`).
   - **Module**: Nomor modul (1–5, Reject, Retract).

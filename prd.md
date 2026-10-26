@@ -13,7 +13,7 @@ Tim lapangan (PKT) mengisi form di HP setiap menemukan kaset rusak/perlu dilapor
   - Baris 1: grup header (A1:F1 merged "diisi PKT", G1:H1 merged "diisi CCAS") -> jangan diubah.
   - Baris 2: header kolom, urutan persis:
     A: WSID
-    B: Tanggal Replenish
+    B: Tanggal Sislok / Bongkaran
     C: Nomor Kaset (Barcode Alsut)
     D: S/N
     E: Module
@@ -34,7 +34,7 @@ Tim lapangan (PKT) mengisi form di HP setiap menemukan kaset rusak/perlu dilapor
 ==================================================
 1) WSID
    - Input teks, wajib. Otomatis uppercase, trim spasi. Hanya huruf & angka (contoh: Z565J). Tidak perlu fitur scan.
-2) Tanggal Replenish
+2) Tanggal Sislok / Bongkaran
    - Terisi otomatis dengan tanggal saat aplikasi dibuka (zona waktu Asia/Jakarta), tampilan "dd MMM yyyy" (mis. 22 Okt 2026).
    - Field read-only (tidak bisa diubah user). Di server, tanggal tetap dihitung ulang dengan new Date() saat submit (jangan percaya nilai dari client), lalu disimpan ke sheet sebagai nilai tanggal asli (bukan teks) dengan number format "d MMM yyyy".
 3) Nomor Kaset (Barcode Alsut)

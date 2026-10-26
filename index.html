@@ -53,6 +53,10 @@
     .app-header {
       padding: 12px 4px 6px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
 
     .app-header h1 {
@@ -60,6 +64,41 @@
       font-weight: 800;
       color: #1e293b;
       letter-spacing: -0.025em;
+      margin: 0;
+    }
+
+    .header-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #f59e0b;
+      color: #92400e;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      line-height: 1.45;
+      text-align: left;
+      width: 100%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-notice .notice-icon {
+      flex-shrink: 0;
+      color: #d97706;
+      margin-top: 1px;
+      display: flex;
+    }
+
+    .header-notice .notice-text {
+      flex: 1;
+      color: #92400e;
+    }
+
+    .header-notice .notice-text strong {
+      color: #78350f;
+      font-weight: 800;
     }
 
     /* Status Koneksi / Notifikasi */
@@ -1032,6 +1071,18 @@
     <!-- HEADER -->
     <header class="app-header">
       <h1>Laporan Kaset Alsut</h1>
+      <div class="header-notice" role="note">
+        <span class="notice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </span>
+        <div class="notice-text">
+          Penginputan link ini ditujukan khusus untuk pelaporan <strong>KASET SISLOK</strong> yang ditemukan rusak
+        </div>
+      </div>
     </header>
 
     <!-- STATUS KONEKSI APPS SCRIPT -->
@@ -1093,10 +1144,10 @@
           <div class="field-error" id="error-lokasi">Lokasi belum terisi. Pilih WSID dari daftar.</div>
         </div>
 
-        <!-- 3. TANGGAL REPLENISH (READ-ONLY) -->
+        <!-- 3. TANGGAL SISLOK / BONGKARAN (READ-ONLY) -->
         <div class="form-group" id="group-tanggal">
           <label class="form-label" for="tanggalReplenish">
-            Tanggal Replenish
+            Tanggal Sislok / Bongkaran
           </label>
           <div class="input-wrapper">
             <span class="readonly-icon">
