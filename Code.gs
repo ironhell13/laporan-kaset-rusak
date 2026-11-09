@@ -804,8 +804,9 @@ function getAdminStats(providedPin) {
 }
 
 /**
- * Menjalankan Snapshot Backup ke folder Google Drive
- * Mengunci watermark jumlah baris yang dibackup
+ * Menjalankan Single Rolling Backup ke folder Google Drive
+ * Menggantikan file backup lama sehingga di folder Drive HANYA ada 1 file Master Backup
+ * yang otomatis di-rename dengan tanggal, jam, dan jumlah data terakhir.
  */
 function performBackup() {
   try {
@@ -827,34 +828,62 @@ function performBackup() {
 
     var backupFolder = getOrCreateBackupFolder();
 
-    // Buat nama file cadangan terstruktur dengan tanggal & jumlah baris
+    // Stempel waktu saat ini
     var now = new Date();
-    var timeStamp = Utilities.formatDate(now, CONFIG.TIMEZONE, "yyyyMMdd_HHmmss");
     var displayTime = Utilities.formatDate(now, CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
-    var backupFileName = "Backup_Laporan_Kaset_Alsut_" + timeStamp + "_" + rowCount + "_Data";
+    var timeStampCode = Utilities.formatDate(now, CONFIG.TIMEZONE, "yyyyMMdd_HHmm");
+    
+    // Format nama file: Backup_Master_Laporan_Kaset_Alsut_(Update_20261109_1015) - 1925 Data
+    var backupFileName = "Backup_Master_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + rowCount + "_Data";
 
-    // Duplikasi spreadsheet secara aman (menyertakan semua data, formula, & foto)
+    // 1. Buat salinan baru spreadsheet lengkap ke folder backup
     var originalFile = DriveApp.getFileById(ss.getId());
-    var backupFile = originalFile.makeCopy(backupFileName, backupFolder);
+    var newBackupFile = originalFile.makeCopy(backupFileName, backupFolder);
 
-    // Simpan informasi backup terakhir di Script Properties
+    // 2. Bersihkan file backup master lama di folder agar TIDAK terjadi tumpukan duplikat (Single Rolling File)
     var props = PropertiesService.getScriptProperties();
+    var prevBackupFileId = props.getProperty("LAST_BACKUP_FILE_ID");
+
+    if (prevBackupFileId && prevBackupFileId !== newBackupFile.getId()) {
+      try {
+        var oldFile = DriveApp.getFileById(prevBackupFileId);
+        oldFile.setTrashed(true);
+      } catch (trashErr) {
+        Logger.log("Info: File backup sebelumnya tidak ditemukan untuk dibersihkan: " + trashErr.message);
+      }
+    }
+
+    // Bersihkan juga jika ada file backup lama lain yang berpola nama backup di folder
+    try {
+      var existingFiles = backupFolder.getFiles();
+      while (existingFiles.hasNext()) {
+        var existingFile = existingFiles.next();
+        if (existingFile.getId() !== newBackupFile.getId() && 
+            (existingFile.getName().indexOf("Backup_Master_") === 0 || existingFile.getName().indexOf("Backup_Laporan_") === 0)) {
+          existingFile.setTrashed(true);
+        }
+      }
+    } catch (cleanErr) {
+      Logger.log("Pembersihan file cadangan ekstra: " + cleanErr.message);
+    }
+
+    // 3. Simpan informasi backup terakhir di Script Properties
     props.setProperties({
       "LAST_BACKUP_TIME": displayTime,
-      "LAST_BACKUP_FILE_ID": backupFile.getId(),
+      "LAST_BACKUP_FILE_ID": newBackupFile.getId(),
       "LAST_BACKUP_FILE_NAME": backupFileName,
-      "LAST_BACKUP_FILE_URL": backupFile.getUrl(),
+      "LAST_BACKUP_FILE_URL": newBackupFile.getUrl(),
       "LAST_BACKUP_ROW_COUNT": String(rowCount),
       "LAST_BACKUP_CUTOFF_ROW": String(lastDataRow)
     });
 
     return {
       success: true,
-      message: "Backup berhasil dibuat.",
+      message: "Backup berhasil dibuat. File master cadangan telah diperbarui.",
       backupFile: {
-        id: backupFile.getId(),
+        id: newBackupFile.getId(),
         name: backupFileName,
-        url: backupFile.getUrl(),
+        url: newBackupFile.getUrl(),
         rowCount: rowCount,
         cutoffRow: lastDataRow,
         timestamp: displayTime,
@@ -872,6 +901,7 @@ function performBackup() {
 /**
  * Menjalankan Cut-Off (Pembersihan Data Lama yang Sudah Terbackup)
  * Menjamin HANYA data yang dicadangkan yang dihapus, data baru dipertahankan & digeser ke baris awal.
+ * DIOPTIMASI: Langsung menggunakan sheet.deleteRows() sehingga ribuan data & fotonya terhapus dalam hitungan detik.
  */
 function performCutOff(rowCountToCut, providedPin) {
   if (CONFIG.ADMIN_PIN && String(providedPin || "").trim() !== String(CONFIG.ADMIN_PIN).trim()) {
@@ -905,29 +935,11 @@ function performCutOff(rowCountToCut, providedPin) {
     var availableCount = lastDataRow - CONFIG.FIRST_DATA_ROW + 1;
     var actualCountToDelete = Math.min(count, availableCount);
 
-    // 1. Bersihkan foto mengambang (OverGridImage) pada baris yang akan dihapus
-    try {
-      var images = sheet.getImages();
-      for (var i = 0; i < images.length; i++) {
-        var img = images[i];
-        try {
-          var cell = img.getAnchorCell();
-          if (cell) {
-            var r = cell.getRow();
-            if (r >= CONFIG.FIRST_DATA_ROW && r < (CONFIG.FIRST_DATA_ROW + actualCountToDelete)) {
-              img.remove();
-            }
-          }
-        } catch (e) {}
-      }
-    } catch (imgErr) {
-      Logger.log("Error saat membersihkan gambar arsip: " + imgErr.message);
-    }
-
-    // 2. Hapus baris data lama (Data baru otomatis bergeser naik ke baris ke-3)
+    // Hapus baris data lama sekaligus (Google Sheets secara native otomatis menghapus
+    // baris dan semua gambar/foto yang tertambat pada baris tersebut dalam 1 operasi batch super cepat)
     sheet.deleteRows(CONFIG.FIRST_DATA_ROW, actualCountToDelete);
 
-    // 3. Pastikan spreadsheet memiliki cadangan baris kosong untuk input berikutnya
+    // Pastikan spreadsheet memiliki cadangan baris kosong untuk input berikutnya
     var maxRows = sheet.getMaxRows();
     if (maxRows < 100) {
       sheet.insertRowsAfter(maxRows, 50);
@@ -935,7 +947,7 @@ function performCutOff(rowCountToCut, providedPin) {
 
     SpreadsheetApp.flush();
 
-    // 4. Hitung sisa data terbaru yang masih ada
+    // Hitung sisa data terbaru yang masih ada
     var newLastRow = getLastDataRow(sheet);
     var remainingCount = (newLastRow >= CONFIG.FIRST_DATA_ROW) ? (newLastRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
 
