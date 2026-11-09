@@ -900,39 +900,6 @@ function performBackup() {
   }
 }
 
-    // Simpan informasi backup terakhir di Script Properties
-    props.setProperties({
-      "LAST_BACKUP_TIME": displayTime,
-      "LAST_BACKUP_FILE_ID": masterFile.getId(),
-      "LAST_BACKUP_FILE_NAME": masterFile.getName(),
-      "LAST_BACKUP_FILE_URL": masterFile.getUrl(),
-      "LAST_BACKUP_ROW_COUNT": String(rowCount),
-      "LAST_BACKUP_TOTAL_CUMULATIVE": String(totalCumulativeCount),
-      "LAST_BACKUP_CUTOFF_ROW": String(lastDataRow)
-    });
-
-    return {
-      success: true,
-      message: "Backup kumulatif berhasil dibuat. Data baru berhasil disambungkan ke Master Arsip.",
-      backupFile: {
-        id: masterFile.getId(),
-        name: masterFile.getName(),
-        url: masterFile.getUrl(),
-        rowCount: rowCount,
-        totalCumulative: totalCumulativeCount,
-        cutoffRow: lastDataRow,
-        timestamp: displayTime,
-        folderUrl: backupFolder.getUrl()
-      }
-    };
-  } catch (err) {
-    return {
-      success: false,
-      message: "Gagal membuat backup kumulatif: " + err.message
-    };
-  }
-}
-
 /**
  * Menjalankan Cut-Off (Pembersihan Data Lama yang Sudah Terbackup)
  * Menjamin HANYA data yang dicadangkan yang dihapus, data baru dipertahankan & digeser ke baris awal.
