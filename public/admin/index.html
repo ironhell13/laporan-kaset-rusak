@@ -909,12 +909,16 @@
 
           // Tampilkan Kotak Konfirmasi Cut-Off
           cutoffRowCountText.textContent = res.backupFile.rowCount;
+          const totalCumText = res.backupFile.totalCumulative 
+            ? `<div><strong>Total Akumulasi di Master Arsip:</strong> ${res.backupFile.totalCumulative} baris data</div>`
+            : '';
           backupSuccessDetails.innerHTML = `
-            <div><strong>File:</strong> ${res.backupFile.name}</div>
-            <div><strong>Jumlah Data:</strong> ${res.backupFile.rowCount} baris</div>
-            <div><strong>Waktu:</strong> ${res.backupFile.timestamp}</div>
-            <div style="margin-top: 6px;">
-              <a href="${res.backupFile.url}" target="_blank" rel="noopener noreferrer">📂 Buka File Hasil Backup di Google Drive ↗</a>
+            <div><strong>File Master:</strong> ${res.backupFile.name}</div>
+            <div><strong>Data Baru Disambungkan:</strong> ${res.backupFile.rowCount} baris</div>
+            ${totalCumText}
+            <div><strong>Waktu Update:</strong> ${res.backupFile.timestamp}</div>
+            <div style="margin-top: 8px;">
+              <a href="${res.backupFile.url}" target="_blank" rel="noopener noreferrer">📂 Buka Master Arsip di Google Drive ↗</a>
             </div>
           `;
           confirmationBox.style.display = "block";

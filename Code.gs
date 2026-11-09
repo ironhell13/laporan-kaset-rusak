@@ -804,9 +804,9 @@ function getAdminStats(providedPin) {
 }
 
 /**
- * Menjalankan Single Rolling Backup ke folder Google Drive
- * Menggantikan file backup lama sehingga di folder Drive HANYA ada 1 file Master Backup
- * yang otomatis di-rename dengan tanggal, jam, dan jumlah data terakhir.
+ * Menjalankan Backup Kumulatif (Append) ke Master Archive di Google Drive
+ * Data baru akan MELANJUTKAN data lama (bukan menimpa/menghapus riwayat sebelumnya).
+ * Folder Google Drive tetap rapi karena hanya ada 1 File Master Arsip Terkini.
  */
 function performBackup() {
   try {
@@ -822,69 +822,167 @@ function performBackup() {
     if (rowCount === 0) {
       return {
         success: false,
-        message: "Tidak ada data pada spreadsheet saat ini untuk dibackup."
+        message: "Tidak ada baris data pada spreadsheet saat ini untuk dicadangkan."
       };
     }
 
     var backupFolder = getOrCreateBackupFolder();
+    var props = PropertiesService.getScriptProperties();
+    var masterArchiveId = props.getProperty("MASTER_ARCHIVE_FILE_ID");
+    var masterFile = null;
+    var masterSs = null;
 
-    // Stempel waktu saat ini
+    // 1. Cek apakah Master Archive Spreadsheet sudah tersimpan di Properties
+    if (masterArchiveId) {
+      try {
+        var candidate = DriveApp.getFileById(masterArchiveId);
+        if (!candidate.isTrashed()) {
+          masterFile = candidate;
+          masterSs = SpreadsheetApp.openById(masterArchiveId);
+        }
+      } catch (e) {
+        masterFile = null;
+        masterSs = null;
+      }
+    }
+
+    // 2. Jika belum ada di properties, cari file arsip master yang sudah ada di folder backup
+    if (!masterFile) {
+      try {
+        var files = backupFolder.getFiles();
+        while (files.hasNext()) {
+          var f = files.next();
+          if (!f.isTrashed() && (f.getName().indexOf("Arsip_Master_") === 0 || f.getName().indexOf("Backup_Master_") === 0)) {
+            masterFile = f;
+            masterSs = SpreadsheetApp.openById(f.getId());
+            props.setProperty("MASTER_ARCHIVE_FILE_ID", f.getId());
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+
     var now = new Date();
     var displayTime = Utilities.formatDate(now, CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
     var timeStampCode = Utilities.formatDate(now, CONFIG.TIMEZONE, "yyyyMMdd_HHmm");
-    
-    // Format nama file: Backup_Master_Laporan_Kaset_Alsut_(Update_20261109_1015) - 1925 Data
-    var backupFileName = "Backup_Master_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + rowCount + "_Data";
+    var totalCumulativeCount = 0;
 
-    // 1. Buat salinan baru spreadsheet lengkap ke folder backup
-    var originalFile = DriveApp.getFileById(ss.getId());
-    var newBackupFile = originalFile.makeCopy(backupFileName, backupFolder);
+    if (!masterFile || !masterSs) {
+      // =========================================================================
+      // KASUS A: Master Archive Belum Pernah Ada (Backup Pertama Kali)
+      // Buat salinan perdana lengkap spreadsheet (menyertakan semua data, formula & foto)
+      // =========================================================================
+      var initialName = "Arsip_Master_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + rowCount + "_Data";
+      var originalFile = DriveApp.getFileById(ss.getId());
+      masterFile = originalFile.makeCopy(initialName, backupFolder);
+      masterArchiveId = masterFile.getId();
+      props.setProperty("MASTER_ARCHIVE_FILE_ID", masterArchiveId);
+      totalCumulativeCount = rowCount;
 
-    // 2. Bersihkan file backup master lama di folder agar TIDAK terjadi tumpukan duplikat (Single Rolling File)
-    var props = PropertiesService.getScriptProperties();
-    var prevBackupFileId = props.getProperty("LAST_BACKUP_FILE_ID");
+    } else {
+      // =========================================================================
+      // KASUS B: Master Archive SUDAH ADA (Backup Berkala / Melanjutkan Data)
+      // Sambungkan (APPEND) baris data baru ke baris paling bawah file Master Archive
+      // =========================================================================
+      var archiveSheet = masterSs.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+      if (!archiveSheet) {
+        archiveSheet = masterSs.getSheets()[0];
+      }
 
-    if (prevBackupFileId && prevBackupFileId !== newBackupFile.getId()) {
+      var masterLastRow = getLastDataRow(archiveSheet);
+      if (masterLastRow < CONFIG.FIRST_DATA_ROW) {
+        masterLastRow = CONFIG.HEADER_ROW || 2;
+      }
+
+      var totalCols = Math.max(reportSheet.getLastColumn(), 11);
+
+      // Pastikan kapasitas baris Master Archive cukup
+      var requiredRows = (masterLastRow + rowCount) - archiveSheet.getMaxRows();
+      if (requiredRows > 0) {
+        archiveSheet.insertRowsAfter(archiveSheet.getMaxRows(), requiredRows + 50);
+      }
+
+      // Ambil nilai data, format tanggal/angka & catatan sel (Note foto) dari sheet aktif
+      var rangeToCopy = reportSheet.getRange(CONFIG.FIRST_DATA_ROW, 1, rowCount, totalCols);
+      var valuesToCopy = rangeToCopy.getValues();
+      var formatsToCopy = rangeToCopy.getNumberFormats();
+      var notesToCopy = rangeToCopy.getNotes();
+
+      // Tulis sambungan data baru ke bagian bawah Master Archive
+      var targetRange = archiveSheet.getRange(masterLastRow + 1, 1, rowCount, totalCols);
+      targetRange.setValues(valuesToCopy);
+      targetRange.setNumberFormats(formatsToCopy);
+      targetRange.setNotes(notesToCopy);
+
+      // Set tinggi baris sel agar konsisten rapi
+      for (var r = 0; r < rowCount; r++) {
+        archiveSheet.setRowHeight(masterLastRow + 1 + r, CONFIG.PHOTO_CELL_HEIGHT || 375);
+      }
+
+      // Salin foto mengambang (OverGridImage) untuk baris data baru
       try {
-        var oldFile = DriveApp.getFileById(prevBackupFileId);
-        oldFile.setTrashed(true);
-      } catch (trashErr) {
-        Logger.log("Info: File backup sebelumnya tidak ditemukan untuk dibersihkan: " + trashErr.message);
-      }
-    }
+        var activeImages = reportSheet.getImages();
+        var pWidth = CONFIG.PHOTO_WIDTH || 465;
+        var pHeight = CONFIG.PHOTO_HEIGHT || 350;
+        var pOffX = CONFIG.PHOTO_OFFSET_X || 15;
+        var pOffY = CONFIG.PHOTO_OFFSET_Y || 12;
 
-    // Bersihkan juga jika ada file backup lama lain yang berpola nama backup di folder
-    try {
-      var existingFiles = backupFolder.getFiles();
-      while (existingFiles.hasNext()) {
-        var existingFile = existingFiles.next();
-        if (existingFile.getId() !== newBackupFile.getId() && 
-            (existingFile.getName().indexOf("Backup_Master_") === 0 || existingFile.getName().indexOf("Backup_Laporan_") === 0)) {
-          existingFile.setTrashed(true);
+        for (var imgIdx = 0; imgIdx < activeImages.length; imgIdx++) {
+          var aImg = activeImages[imgIdx];
+          var anchor = aImg.getAnchorCell();
+          if (anchor) {
+            var aRow = anchor.getRow();
+            var aCol = anchor.getColumn();
+            if (aRow >= CONFIG.FIRST_DATA_ROW && aRow <= lastDataRow) {
+              var newTargetRow = masterLastRow + 1 + (aRow - CONFIG.FIRST_DATA_ROW);
+              var blob = aImg.getBlob();
+              var inserted = archiveSheet.insertImage(blob, aCol, newTargetRow, pOffX, pOffY);
+              if (inserted) {
+                inserted.setWidth(pWidth);
+                inserted.setHeight(pHeight);
+                var altT = aImg.getAltTextTitle();
+                if (altT) inserted.setAltTextTitle(altT);
+                var altD = aImg.getAltTextDescription();
+                if (altD) inserted.setAltTextDescription(altD);
+              }
+            }
+          }
         }
+      } catch (imgCopyErr) {
+        Logger.log("Info copy foto arsip: " + imgCopyErr.message);
       }
-    } catch (cleanErr) {
-      Logger.log("Pembersihan file cadangan ekstra: " + cleanErr.message);
+
+      SpreadsheetApp.flush();
+
+      // Hitung total akumulasi data di Master Archive
+      var finalMasterLastRow = getLastDataRow(archiveSheet);
+      totalCumulativeCount = (finalMasterLastRow >= CONFIG.FIRST_DATA_ROW) ? (finalMasterLastRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
+
+      // Rename file Master Archive dengan stempel waktu & jumlah data kumulatif
+      var updatedName = "Arsip_Master_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + totalCumulativeCount + "_Data";
+      masterFile.setName(updatedName);
     }
 
-    // 3. Simpan informasi backup terakhir di Script Properties
+    // Simpan informasi backup terakhir di Script Properties
     props.setProperties({
       "LAST_BACKUP_TIME": displayTime,
-      "LAST_BACKUP_FILE_ID": newBackupFile.getId(),
-      "LAST_BACKUP_FILE_NAME": backupFileName,
-      "LAST_BACKUP_FILE_URL": newBackupFile.getUrl(),
+      "LAST_BACKUP_FILE_ID": masterFile.getId(),
+      "LAST_BACKUP_FILE_NAME": masterFile.getName(),
+      "LAST_BACKUP_FILE_URL": masterFile.getUrl(),
       "LAST_BACKUP_ROW_COUNT": String(rowCount),
+      "LAST_BACKUP_TOTAL_CUMULATIVE": String(totalCumulativeCount),
       "LAST_BACKUP_CUTOFF_ROW": String(lastDataRow)
     });
 
     return {
       success: true,
-      message: "Backup berhasil dibuat. File master cadangan telah diperbarui.",
+      message: "Backup kumulatif berhasil dibuat. Data baru berhasil disambungkan ke Master Arsip.",
       backupFile: {
-        id: newBackupFile.getId(),
-        name: backupFileName,
-        url: newBackupFile.getUrl(),
+        id: masterFile.getId(),
+        name: masterFile.getName(),
+        url: masterFile.getUrl(),
         rowCount: rowCount,
+        totalCumulative: totalCumulativeCount,
         cutoffRow: lastDataRow,
         timestamp: displayTime,
         folderUrl: backupFolder.getUrl()
@@ -893,7 +991,7 @@ function performBackup() {
   } catch (err) {
     return {
       success: false,
-      message: "Gagal membuat backup di Google Drive: " + err.message
+      message: "Gagal membuat backup kumulatif: " + err.message
     };
   }
 }
@@ -909,9 +1007,6 @@ function performCutOff(rowCountToCut, providedPin) {
   }
 
   var count = parseInt(rowCountToCut, 10);
-  if (isNaN(count) || count <= 0) {
-    return { success: false, message: "Jumlah baris data yang akan dibersihkan tidak valid." };
-  }
 
   var lock = LockService.getScriptLock();
   var lockAcquired = false;
@@ -933,17 +1028,20 @@ function performCutOff(rowCountToCut, providedPin) {
     }
 
     var availableCount = lastDataRow - CONFIG.FIRST_DATA_ROW + 1;
+    if (isNaN(count) || count <= 0) {
+      count = availableCount;
+    }
     var actualCountToDelete = Math.min(count, availableCount);
 
-    // Hapus baris data lama sekaligus (Google Sheets secara native otomatis menghapus
-    // baris dan semua gambar/foto yang tertambat pada baris tersebut dalam 1 operasi batch super cepat)
-    sheet.deleteRows(CONFIG.FIRST_DATA_ROW, actualCountToDelete);
-
-    // Pastikan spreadsheet memiliki cadangan baris kosong untuk input berikutnya
-    var maxRows = sheet.getMaxRows();
-    if (maxRows < 100) {
-      sheet.insertRowsAfter(maxRows, 50);
+    // Pastikan spreadsheet memiliki cadangan baris kosong sebelum baris lama dihapus
+    var currentMax = sheet.getMaxRows();
+    if (currentMax - actualCountToDelete < 50) {
+      sheet.insertRowsAfter(currentMax, 50);
     }
+
+    // Hapus baris data lama sekaligus (Google Sheets secara native otomatis menghapus
+    // baris dan semua gambar/foto yang tertambat pada baris tersebut dalam 1 operasi batch super cepat ~1 detik)
+    sheet.deleteRows(CONFIG.FIRST_DATA_ROW, actualCountToDelete);
 
     SpreadsheetApp.flush();
 
