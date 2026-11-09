@@ -117,3 +117,21 @@ Bagikan tautan Vercel kepada tim lapangan:
 - **Android (Chrome)**: Ketuk titik tiga (⋮) > **"Add to Home screen"** / **"Install app"**.
 - **iPhone (Safari)**: Ketuk ikon Share (kotak panah ke atas) > **"Add to Home Screen"**.
 Aplikasi akan muncul di layar HP dengan ikon kaset dan dapat dibuka layaknya aplikasi native tanpa bar browser!
+
+---
+
+## Langkah 5: Dashboard Admin (`/admin`) - Backup & Pembersihan Data
+
+Untuk mengontrol backup dan mencegah spreadsheet penuh/lemot:
+
+1. Buka tautan: `https://[nama-aplikasi-anda].vercel.app/admin` (atau klik tautan **"Dashboard Admin"** di footer formulir).
+2. Masukkan PIN Admin:
+   - **PIN Default:** `123456` *(Dapat Anda ubah kapan saja di `CONFIG.ADMIN_PIN` pada `Code.gs`)*.
+3. **Mulai Backup:**
+   - Tekan tombol **"Mulai Backup Data Sekarang"**.
+   - Sistem otomatis membuat salinan spreadsheet lengkap ke folder Google Drive **"Backup Laporan Kaset Alsut"** (termasuk semua data dan bukti foto).
+4. **Pembersihan Data Lama (Cut-Off):**
+   - Setelah backup sukses, muncul konfirmasi:  
+     *"Apakah Anda ingin menghapus X baris data yang SUDAH terbackup ini dari spreadsheet aktif?"*
+   - Tekan **"Ya, Bersihkan Data Lama"**.
+   - **Aman 100%:** Data baru yang masuk dari tim lapangan selama proses backup **TIDAK AKAN terhapus**, dan sisa data baru tersebut otomatis digeser rapi naik ke barisan awal spreadsheet (mulai baris ke-3 di bawah header).

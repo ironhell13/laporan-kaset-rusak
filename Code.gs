@@ -44,7 +44,12 @@ const CONFIG = {
   PHOTO_CELL_WIDTH: 495,   // Lebar kolom sel (foto 465 px + margin kiri-kanan 30 px)
   PHOTO_CELL_HEIGHT: 375,  // Tinggi baris sel (foto 350 px + margin atas-bawah 25 px)
   PHOTO_OFFSET_X: 15,      // Jarak offset horizontal dari garis batas kiri sel (15 pixel)
-  PHOTO_OFFSET_Y: 12       // Jarak offset vertikal dari garis batas atas sel (12 pixel)
+  PHOTO_OFFSET_Y: 12,      // Jarak offset vertikal dari garis batas atas sel (12 pixel)
+
+  // Konfigurasi Dashboard Admin & Backup
+  ADMIN_PIN: "123456",     // PIN untuk otentikasi dashboard admin (ganti jika diperlukan)
+  BACKUP_FOLDER_NAME: "Backup Laporan Kaset Alsut", // Nama folder penyimpanan backup di Google Drive
+  BACKUP_FOLDER_ID: ""     // Opsional: ID folder khusus di Google Drive jika ada
 };
 
 /**
@@ -76,6 +81,8 @@ function doGet(e) {
         result = getInitialData();
       } else if (action === "checkDuplicate") {
         result = checkDuplicate(e.parameter.nomorKaset);
+      } else if (action === "adminAction") {
+        result = handleAdminAction(e.parameter);
       } else {
         result = { success: false, message: "Aksi GET '" + action + "' tidak didukung." };
       }
@@ -127,10 +134,12 @@ function doPost(e) {
     } else if (action === "saveReport") {
       var payload = body.payload || body;
       result = saveReport(payload);
+    } else if (action === "adminAction") {
+      result = handleAdminAction(body);
     } else {
       result = {
         success: false,
-        message: "Aksi '" + action + "' tidak dikenali. Gunakan getInitialData, checkDuplicate, atau saveReport."
+        message: "Aksi '" + action + "' tidak dikenali. Gunakan getInitialData, checkDuplicate, saveReport, atau adminAction."
       };
     }
 
@@ -703,4 +712,277 @@ function updateHeaderSpreadsheet() {
     return "Berhasil memperbarui header menjadi: Tanggal Sislok / Bongkaran";
   }
   return "Kolom tanggal tidak ditemukan.";
+}
+
+// =========================================================================
+// FITUR DASHBOARD ADMIN, BACKUP OTOMATIS & ARSIP (CUT-OFF)
+// =========================================================================
+
+/**
+ * Mencari baris data terakhir yang valid pada sheet laporan
+ * (Mengecek isi kolom WSID atau Nomor Kaset mulai baris ke-3)
+ */
+function getLastDataRow(sheet) {
+  if (!sheet) return 0;
+  var lastRow = sheet.getLastRow();
+  if (lastRow < CONFIG.FIRST_DATA_ROW) {
+    return 0;
+  }
+  var numToCheck = lastRow - CONFIG.FIRST_DATA_ROW + 1;
+  // Baca kolom A (WSID) dan D (Nomor Kaset)
+  var values = sheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numToCheck, 4).getValues();
+  for (var r = values.length - 1; r >= 0; r--) {
+    var colA = values[r][0];
+    var colD = values[r][3];
+    if ((colA !== "" && colA !== null && colA !== undefined) ||
+        (colD !== "" && colD !== null && colD !== undefined)) {
+      return CONFIG.FIRST_DATA_ROW + r;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Mendapatkan atau membuat folder khusus backup di Google Drive
+ */
+function getOrCreateBackupFolder() {
+  if (CONFIG.BACKUP_FOLDER_ID && CONFIG.BACKUP_FOLDER_ID.trim() !== "") {
+    try {
+      return DriveApp.getFolderById(CONFIG.BACKUP_FOLDER_ID.trim());
+    } catch (e) {
+      Logger.log("Folder ID khusus tidak ditemukan, mencari/membuat folder berdasarkan nama: " + e.message);
+    }
+  }
+
+  var folderName = CONFIG.BACKUP_FOLDER_NAME || "Backup Laporan Kaset Alsut";
+  var folders = DriveApp.getFoldersByName(folderName);
+  if (folders.hasNext()) {
+    return folders.next();
+  }
+
+  return DriveApp.createFolder(folderName);
+}
+
+/**
+ * Mengambil ringkasan statistik data aktif & riwayat backup untuk dashboard admin
+ */
+function getAdminStats(providedPin) {
+  if (CONFIG.ADMIN_PIN && String(providedPin || "").trim() !== String(CONFIG.ADMIN_PIN).trim()) {
+    return { success: false, message: "PIN Admin tidak valid!" };
+  }
+
+  try {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+    var lastDataRow = sheet ? getLastDataRow(sheet) : 0;
+    var rowCount = (lastDataRow >= CONFIG.FIRST_DATA_ROW) ? (lastDataRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
+
+    var props = PropertiesService.getScriptProperties().getProperties();
+    var backupFolder = getOrCreateBackupFolder();
+
+    return {
+      success: true,
+      activeRows: rowCount,
+      spreadsheetName: ss.getName(),
+      spreadsheetUrl: ss.getUrl(),
+      backupFolderName: backupFolder.getName(),
+      backupFolderUrl: backupFolder.getUrl(),
+      lastBackup: {
+        time: props["LAST_BACKUP_TIME"] || "Belum pernah dibackup",
+        fileName: props["LAST_BACKUP_FILE_NAME"] || "-",
+        fileUrl: props["LAST_BACKUP_FILE_URL"] || "",
+        rowCount: props["LAST_BACKUP_ROW_COUNT"] || "0"
+      },
+      lastCutoffTime: props["LAST_CUTOFF_TIME"] || "Belum pernah dilakukan pembersihan"
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: "Gagal mengambil data statistik admin: " + err.message
+    };
+  }
+}
+
+/**
+ * Menjalankan Snapshot Backup ke folder Google Drive
+ * Mengunci watermark jumlah baris yang dibackup
+ */
+function performBackup() {
+  try {
+    var ss = getSpreadsheet();
+    var reportSheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+    if (!reportSheet) {
+      throw new Error("Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan.");
+    }
+
+    var lastDataRow = getLastDataRow(reportSheet);
+    var rowCount = (lastDataRow >= CONFIG.FIRST_DATA_ROW) ? (lastDataRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
+
+    if (rowCount === 0) {
+      return {
+        success: false,
+        message: "Tidak ada data pada spreadsheet saat ini untuk dibackup."
+      };
+    }
+
+    var backupFolder = getOrCreateBackupFolder();
+
+    // Buat nama file cadangan terstruktur dengan tanggal & jumlah baris
+    var now = new Date();
+    var timeStamp = Utilities.formatDate(now, CONFIG.TIMEZONE, "yyyyMMdd_HHmmss");
+    var displayTime = Utilities.formatDate(now, CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
+    var backupFileName = "Backup_Laporan_Kaset_Alsut_" + timeStamp + "_" + rowCount + "_Data";
+
+    // Duplikasi spreadsheet secara aman (menyertakan semua data, formula, & foto)
+    var originalFile = DriveApp.getFileById(ss.getId());
+    var backupFile = originalFile.makeCopy(backupFileName, backupFolder);
+
+    // Simpan informasi backup terakhir di Script Properties
+    var props = PropertiesService.getScriptProperties();
+    props.setProperties({
+      "LAST_BACKUP_TIME": displayTime,
+      "LAST_BACKUP_FILE_ID": backupFile.getId(),
+      "LAST_BACKUP_FILE_NAME": backupFileName,
+      "LAST_BACKUP_FILE_URL": backupFile.getUrl(),
+      "LAST_BACKUP_ROW_COUNT": String(rowCount),
+      "LAST_BACKUP_CUTOFF_ROW": String(lastDataRow)
+    });
+
+    return {
+      success: true,
+      message: "Backup berhasil dibuat.",
+      backupFile: {
+        id: backupFile.getId(),
+        name: backupFileName,
+        url: backupFile.getUrl(),
+        rowCount: rowCount,
+        cutoffRow: lastDataRow,
+        timestamp: displayTime,
+        folderUrl: backupFolder.getUrl()
+      }
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: "Gagal membuat backup di Google Drive: " + err.message
+    };
+  }
+}
+
+/**
+ * Menjalankan Cut-Off (Pembersihan Data Lama yang Sudah Terbackup)
+ * Menjamin HANYA data yang dicadangkan yang dihapus, data baru dipertahankan & digeser ke baris awal.
+ */
+function performCutOff(rowCountToCut, providedPin) {
+  if (CONFIG.ADMIN_PIN && String(providedPin || "").trim() !== String(CONFIG.ADMIN_PIN).trim()) {
+    return { success: false, message: "PIN Admin tidak valid!" };
+  }
+
+  var count = parseInt(rowCountToCut, 10);
+  if (isNaN(count) || count <= 0) {
+    return { success: false, message: "Jumlah baris data yang akan dibersihkan tidak valid." };
+  }
+
+  var lock = LockService.getScriptLock();
+  var lockAcquired = false;
+
+  try {
+    // Kunci proses pembersihan agar tidak bentrok dengan input form dari lapangan
+    lock.waitLock(30000);
+    lockAcquired = true;
+
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+    if (!sheet) {
+      throw new Error("Sheet laporan tidak ditemukan.");
+    }
+
+    var lastDataRow = getLastDataRow(sheet);
+    if (lastDataRow < CONFIG.FIRST_DATA_ROW) {
+      return { success: false, message: "Tidak ada baris data tersisa untuk dibersihkan." };
+    }
+
+    var availableCount = lastDataRow - CONFIG.FIRST_DATA_ROW + 1;
+    var actualCountToDelete = Math.min(count, availableCount);
+
+    // 1. Bersihkan foto mengambang (OverGridImage) pada baris yang akan dihapus
+    try {
+      var images = sheet.getImages();
+      for (var i = 0; i < images.length; i++) {
+        var img = images[i];
+        try {
+          var cell = img.getAnchorCell();
+          if (cell) {
+            var r = cell.getRow();
+            if (r >= CONFIG.FIRST_DATA_ROW && r < (CONFIG.FIRST_DATA_ROW + actualCountToDelete)) {
+              img.remove();
+            }
+          }
+        } catch (e) {}
+      }
+    } catch (imgErr) {
+      Logger.log("Error saat membersihkan gambar arsip: " + imgErr.message);
+    }
+
+    // 2. Hapus baris data lama (Data baru otomatis bergeser naik ke baris ke-3)
+    sheet.deleteRows(CONFIG.FIRST_DATA_ROW, actualCountToDelete);
+
+    // 3. Pastikan spreadsheet memiliki cadangan baris kosong untuk input berikutnya
+    var maxRows = sheet.getMaxRows();
+    if (maxRows < 100) {
+      sheet.insertRowsAfter(maxRows, 50);
+    }
+
+    SpreadsheetApp.flush();
+
+    // 4. Hitung sisa data terbaru yang masih ada
+    var newLastRow = getLastDataRow(sheet);
+    var remainingCount = (newLastRow >= CONFIG.FIRST_DATA_ROW) ? (newLastRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
+
+    var cutoffTime = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
+    PropertiesService.getScriptProperties().setProperty("LAST_CUTOFF_TIME", cutoffTime);
+
+    return {
+      success: true,
+      deletedCount: actualCountToDelete,
+      remainingCount: remainingCount,
+      message: "Sebanyak " + actualCountToDelete + " baris data lama berhasil dibersihkan! Sisa " + remainingCount + " baris data terbaru kini tersusun rapi di barisan awal."
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      message: "Gagal melakukan pembersihan: " + err.message
+    };
+  } finally {
+    if (lockAcquired) {
+      try {
+        lock.releaseLock();
+      } catch (e) {}
+    }
+  }
+}
+
+/**
+ * Dispatcher penanganan request admin dari Web App / Vercel
+ */
+function handleAdminAction(body) {
+  var pin = (body && (body.pin || body.adminPin)) || "";
+  var subAction = (body && (body.subAction || body.adminAction)) || "";
+
+  if (CONFIG.ADMIN_PIN && String(pin).trim() !== String(CONFIG.ADMIN_PIN).trim()) {
+    return { success: false, message: "PIN Admin tidak cocok. Akses ditolak." };
+  }
+
+  if (subAction === "verifyPin") {
+    return { success: true, message: "PIN Admin valid." };
+  } else if (subAction === "getAdminStats" || subAction === "stats") {
+    return getAdminStats(pin);
+  } else if (subAction === "backup") {
+    return performBackup();
+  } else if (subAction === "cutOff") {
+    return performCutOff(body.rowCount, pin);
+  } else {
+    return { success: false, message: "Sub-aksi admin '" + subAction + "' tidak dikenali." };
+  }
 }

@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard Admin - Backup & Arsip Laporan Kaset Alsut</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+
+  <style>
+    /* =========================================================================
+       RESET & BASE STYLES
+       ========================================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      line-height: 1.5;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .admin-container {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* =========================================================================
+       HEADER
+       ========================================================================= */
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 6px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .header-text h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #f8fafc;
+      letter-spacing: -0.02em;
+    }
+
+    .header-text p {
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .btn-nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background-color: #1e293b;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid #334155;
+      transition: all 0.15s ease;
+    }
+
+    .btn-nav-back:hover {
+      background-color: #334155;
+      color: white;
+    }
+
+    /* =========================================================================
+       CARD CONTAINERS
+       ========================================================================= */
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    /* =========================================================================
+       PIN LOGIN SCREEN
+       ========================================================================= */
+    .login-box {
+      text-align: center;
+      padding: 32px 16px;
+    }
+
+    .login-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      color: #60a5fa;
+    }
+
+    .login-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .login-desc {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+
+    .pin-input-group {
+      max-width: 260px;
+      margin: 0 auto 16px;
+    }
+
+    .pin-input {
+      width: 100%;
+      height: 48px;
+      border-radius: 10px;
+      background-color: #0f172a;
+      border: 2px solid #475569;
+      color: #f8fafc;
+      font-size: 1.3rem;
+      text-align: center;
+      letter-spacing: 0.3em;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .pin-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .pin-error {
+      color: #f87171;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .btn-login {
+      width: 100%;
+      max-width: 260px;
+      height: 44px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-login:hover {
+      background-color: #1d4ed8;
+    }
+
+    /* =========================================================================
+       METRICS GRID
+       ========================================================================= */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metric-card {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #f8fafc;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-sub {
+      font-size: 0.74rem;
+      color: #64748b;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+
+    .metric-sub a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    .metric-sub a:hover {
+      text-decoration: underline;
+    }
+
+    /* =========================================================================
+       ACTION AREA
+       ========================================================================= */
+    .action-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .action-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-callout {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: #93c5fd;
+      line-height: 1.45;
+      margin-bottom: 18px;
+    }
+
+    .info-callout strong {
+      color: #bfdbfe;
+    }
+
+    .btn-main-backup {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: all 0.15s ease;
+    }
+
+    .btn-main-backup:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      transform: translateY(-1px);
+    }
+
+    .btn-main-backup:active {
+      transform: translateY(1px);
+    }
+
+    .btn-main-backup:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-refresh {
+      background: transparent;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-refresh:hover {
+      background: #334155;
+      color: white;
+    }
+
+    /* =========================================================================
+       CONFIRMATION CARD (CUT-OFF STAGE)
+       ========================================================================= */
+    .confirmation-box {
+      margin-top: 18px;
+      border: 2px solid #22c55e;
+      background-color: #064e3b;
+      border-radius: 12px;
+      padding: 16px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .confirmation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+
+    .confirmation-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #f0fdf4;
+      margin-bottom: 6px;
+    }
+
+    .confirmation-details {
+      background-color: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.8rem;
+      color: #bbf7d0;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .confirmation-details a {
+      color: #86efac;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .cutoff-alert-box {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: #fca5a5;
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+
+    .cutoff-alert-box strong {
+      color: #fee2e2;
+    }
+
+    .cutoff-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .cutoff-actions {
+        flex-direction: column;
+      }
+    }
+
+    .btn-cutoff-confirm {
+      flex: 1;
+      height: 46px;
+      background-color: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-cutoff-confirm:hover {
+      background-color: #b91c1c;
+    }
+
+    .btn-cutoff-cancel {
+      flex: 1;
+      height: 46px;
+      background-color: #334155;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-cutoff-cancel:hover {
+      background-color: #475569;
+      color: white;
+    }
+
+    /* =========================================================================
+       SPINNER & ALERTS
+       ========================================================================= */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast-admin {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background-color: #1e293b;
+      border: 1px solid #475569;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 90%;
+    }
+
+    .toast-admin.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    
+    .toast-admin.success {
+      border-color: #22c55e;
+      background-color: #064e3b;
+      color: #f0fdf4;
+    }
+
+    .toast-admin.error {
+      border-color: #ef4444;
+      background-color: #7f1d1d;
+      color: #fef2f2;
+    }
+
+    /* Footer link */
+    .admin-footer {
+      text-align: center;
+      padding: 16px 0;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="admin-container">
+    
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="header-title-box">
+        <div class="header-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Dashboard Admin</h1>
+          <p>Backup & Cut-Off Pembersihan Spreadsheet</p>
+        </div>
+      </div>
+      <a href="/" class="btn-nav-back" title="Kembali ke formulir pelaporan">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Form Input
+      </a>
+    </header>
+
+    <!-- 1. LOGIN PIN SCREEN -->
+    <div id="loginScreen" class="card login-box">
+      <div class="login-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h2 class="login-title">Akses Khusus Admin</h2>
+      <p class="login-desc">Masukkan PIN Admin untuk mengelola backup dan pembersihan data.</p>
+      
+      <div class="pin-input-group">
+        <input 
+          type="password" 
+          id="pinInput" 
+          class="pin-input" 
+          placeholder="••••••" 
+          maxlength="8" 
+          autocomplete="off"
+          inputmode="numeric"
+        >
+      </div>
+      <div id="pinError" class="pin-error">PIN Admin salah. Silakan coba lagi.</div>
+      
+      <button type="button" id="btnLogin" class="btn-login">
+        <span>Buka Dashboard</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+      <p style="margin-top: 14px; font-size: 0.72rem; color: #64748b;">(PIN bawaan sistem: 123456)</p>
+    </div>
+
+    <!-- 2. MAIN DASHBOARD CONTENT (HIDDEN SEBELUM LOGIN) -->
+    <div id="dashboardContent" style="display: none; display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- STATS METRICS -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label">📊 Data Aktif Saat Ini</span>
+          <div class="metric-value" id="statActiveRows">...</div>
+          <div class="metric-sub" id="statSpreadsheetInfo">Memuat info sheet...</div>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">🕒 Backup Terakhir</span>
+          <div class="metric-value" style="font-size: 1.15rem; margin-top: 4px;" id="statLastBackupTime">...</div>
+          <div class="metric-sub" id="statLastBackupFile">Menghubungkan...</div>
+        </div>
+      </div>
+
+      <!-- ACTION CARD -->
+      <div class="card">
+        <div class="action-header">
+          <div class="action-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Eksekusi Backup & Arsip
+          </div>
+          <button type="button" id="btnRefreshStats" class="btn-refresh" title="Perbarui data terkini">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Segarkan
+          </button>
+        </div>
+
+        <div class="info-callout">
+          💡 <strong>Cara Kerja Aman:</strong> Saat Anda menekan tombol di bawah, sistem membuat salinan cadangan lengkap spreadsheet ke Google Drive. Setelah backup berhasil, sistem akan menanyakan apakah Anda ingin membersihkan baris data lama tersebut dari spreadsheet aktif.
+        </div>
+
+        <!-- TOMBOL UTAMA BACKUP -->
+        <button type="button" id="btnExecuteBackup" class="btn-main-backup">
+          <span id="btnBackupSpinner" class="spinner" style="display: none;"></span>
+          <svg id="btnBackupIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span id="btnBackupText">Mulai Backup Data Sekarang</span>
+        </button>
+
+        <!-- KOTAK KONFIRMASI CUT-OFF (MUNCUL OTOMATIS SETELAH BACKUP BERHASIL) -->
+        <div id="confirmationBox" class="confirmation-box">
+          <div class="confirmation-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Backup Berhasil Dibuat
+          </div>
+
+          <h3 class="confirmation-title">Salinan Tersimpan di Google Drive</h3>
+
+          <div class="confirmation-details" id="backupSuccessDetails">
+            <!-- Diisi lewat JavaScript -->
+          </div>
+
+          <div class="cutoff-alert-box">
+            <strong>⚠️ Langkah 2: Pembersihan Data Lama</strong><br>
+            Apakah Anda ingin menghapus <strong id="cutoffRowCountText">0</strong> baris data yang <strong>SUDAH</strong> dicadangkan tersebut dari spreadsheet aktif?<br><br>
+            🛡️ <em>Data baru yang masuk dari tim lapangan selama proses backup <strong>TIDAK AKAN terhapus</strong> dan posisinya akan otomatis digeser rapi ke barisan awal.</em>
+          </div>
+
+          <div class="cutoff-actions">
+            <button type="button" id="btnConfirmCutoff" class="btn-cutoff-confirm">
+              <span id="btnCutoffSpinner" class="spinner" style="display: none;"></span>
+              <svg id="btnCutoffIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span id="btnCutoffText">Ya, Bersihkan Data Lama</span>
+            </button>
+
+            <button type="button" id="btnCancelCutoff" class="btn-cutoff-cancel">
+              Selesai Tanpa Hapus
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DRIVE FOLDER SHORTCUT -->
+      <div class="card" style="padding: 14px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1;">Folder Backup di Google Drive</div>
+            <div style="font-size: 0.74rem; color: #64748b;" id="backupFolderLabel">Backup Laporan Kaset Alsut</div>
+          </div>
+          <a id="linkOpenDrive" href="#" target="_blank" rel="noopener noreferrer" class="btn-refresh" style="text-decoration: none;">
+            Buka Folder ↗
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="admin-footer">
+      Laporan Kaset Alsut &bull; Vercel Serverless Architecture &bull; Secure Backup Engine
+    </footer>
+
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="adminToast" class="toast-admin">
+    <span id="toastAdminText">Pesan</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // STATE & INITIALIZATION
+    // =========================================================================
+    let currentAdminPin = sessionStorage.getItem("ADMIN_PIN") || "";
+    let pendingBackupData = null; // Menyimpan data { rowCount, fileName, fileUrl } dari backup terakhir
+
+    const loginScreen = document.getElementById("loginScreen");
+    const dashboardContent = document.getElementById("dashboardContent");
+    const pinInput = document.getElementById("pinInput");
+    const pinError = document.getElementById("pinError");
+    const btnLogin = document.getElementById("btnLogin");
+
+    const statActiveRows = document.getElementById("statActiveRows");
+    const statSpreadsheetInfo = document.getElementById("statSpreadsheetInfo");
+    const statLastBackupTime = document.getElementById("statLastBackupTime");
+    const statLastBackupFile = document.getElementById("statLastBackupFile");
+    const btnRefreshStats = document.getElementById("btnRefreshStats");
+
+    const btnExecuteBackup = document.getElementById("btnExecuteBackup");
+    const btnBackupSpinner = document.getElementById("btnBackupSpinner");
+    const btnBackupIcon = document.getElementById("btnBackupIcon");
+    const btnBackupText = document.getElementById("btnBackupText");
+
+    const confirmationBox = document.getElementById("confirmationBox");
+    const backupSuccessDetails = document.getElementById("backupSuccessDetails");
+    const cutoffRowCountText = document.getElementById("cutoffRowCountText");
+    const btnConfirmCutoff = document.getElementById("btnConfirmCutoff");
+    const btnCutoffSpinner = document.getElementById("btnCutoffSpinner");
+    const btnCutoffIcon = document.getElementById("btnCutoffIcon");
+    const btnCutoffText = document.getElementById("btnCutoffText");
+    const btnCancelCutoff = document.getElementById("btnCancelCutoff");
+
+    const linkOpenDrive = document.getElementById("linkOpenDrive");
+    const backupFolderLabel = document.getElementById("backupFolderLabel");
+
+    // =========================================================================
+    // API CALL HELPER
+    // =========================================================================
+    function getCustomGasUrl() {
+      return localStorage.getItem("CUSTOM_GAS_URL") || "";
+    }
+
+    async function callAdminApi(subAction, payload = {}) {
+      const customUrl = getCustomGasUrl();
+      const headers = { "Content-Type": "application/json" };
+      if (customUrl) headers["x-gas-url"] = customUrl;
+
+      const body = {
+        subAction: subAction,
+        pin: currentAdminPin,
+        ...payload
+      };
+
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Server error ${res.status}: ${errText.substring(0, 100)}`);
+      }
+
+      return await res.json();
+    }
+
+    // =========================================================================
+    // TOAST NOTIFIKASI
+    // =========================================================================
+    let toastTimeout = null;
+    function showAdminToast(msg, isSuccess = true) {
+      const toast = document.getElementById("adminToast");
+      const text = document.getElementById("toastAdminText");
+      if (toastTimeout) clearTimeout(toastTimeout);
+
+      toast.className = "toast-admin " + (isSuccess ? "success" : "error");
+      text.textContent = msg;
+      toast.classList.add("show");
+
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 4000);
+    }
+
+    // =========================================================================
+    // LOGIN PIN LOGIC
+    // =========================================================================
+    btnLogin.addEventListener("click", handleLogin);
+    pinInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    async function handleLogin() {
+      const pin = pinInput.value.trim();
+      if (!pin) {
+        showPinError("Masukkan PIN terlebih dahulu.");
+        return;
+      }
+
+      btnLogin.disabled = true;
+      btnLogin.innerHTML = `<span class="spinner"></span> <span>Memeriksa...</span>`;
+      pinError.style.display = "none";
+
+      try {
+        currentAdminPin = pin;
+        const res = await callAdminApi("verifyPin");
+        if (res.success) {
+          sessionStorage.setItem("ADMIN_PIN", pin);
+          showDashboard();
+        } else {
+          showPinError(res.message || "PIN Admin salah.");
+          currentAdminPin = "";
+        }
+      } catch (err) {
+        showPinError("Gagal menghubungi server: " + err.message);
+        currentAdminPin = "";
+      } finally {
+        btnLogin.disabled = false;
+        btnLogin.innerHTML = `<span>Buka Dashboard</span> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
+      }
+    }
+
+    function showPinError(msg) {
+      pinError.textContent = msg;
+      pinError.style.display = "block";
+      pinInput.focus();
+    }
+
+    function showDashboard() {
+      loginScreen.style.display = "none";
+      dashboardContent.style.display = "flex";
+      loadAdminStats();
+    }
+
+    // Cek sesi login saat halaman dimuat
+    if (currentAdminPin) {
+      showDashboard();
+    }
+
+    // =========================================================================
+    // LOAD STATISTIK DATA
+    // =========================================================================
+    async function loadAdminStats() {
+      statActiveRows.textContent = "...";
+      statSpreadsheetInfo.textContent = "Mengambil data...";
+
+      try {
+        const res = await callAdminApi("getAdminStats");
+        if (res.success) {
+          statActiveRows.textContent = `${res.activeRows} Baris`;
+          statSpreadsheetInfo.innerHTML = res.spreadsheetUrl
+            ? `<a href="${res.spreadsheetUrl}" target="_blank" rel="noopener noreferrer">Buka Spreadsheet ↗</a>`
+            : (res.spreadsheetName || "Format Laporan Kaset Rusak");
+
+          statLastBackupTime.textContent = res.lastBackup.time;
+          if (res.lastBackup.fileUrl) {
+            statLastBackupFile.innerHTML = `<a href="${res.lastBackup.fileUrl}" target="_blank" rel="noopener noreferrer">${res.lastBackup.fileName} (${res.lastBackup.rowCount} data) ↗</a>`;
+          } else {
+            statLastBackupFile.textContent = "Belum ada file cadangan";
+          }
+
+          if (res.backupFolderUrl) {
+            linkOpenDrive.href = res.backupFolderUrl;
+            backupFolderLabel.textContent = res.backupFolderName || "Folder Google Drive";
+          }
+        } else {
+          statActiveRows.textContent = "Error";
+          statSpreadsheetInfo.textContent = res.message;
+        }
+      } catch (err) {
+        statActiveRows.textContent = "Error";
+        statSpreadsheetInfo.textContent = "Gagal memuat: " + err.message;
+      }
+    }
+
+    btnRefreshStats.addEventListener("click", () => {
+      loadAdminStats();
+      showAdminToast("Data statistik disegarkan.", true);
+    });
+
+    // =========================================================================
+    // EKSEKUSI TAHAP 1: BACKUP SPREADSHEET
+    // =========================================================================
+    btnExecuteBackup.addEventListener("click", async () => {
+      if (!confirm("Mulai membuat salinan cadangan spreadsheet ke Google Drive?")) {
+        return;
+      }
+
+      setBackupLoading(true);
+      confirmationBox.style.display = "none";
+
+      try {
+        const res = await callAdminApi("backup");
+        if (res.success && res.backupFile) {
+          pendingBackupData = res.backupFile;
+          showAdminToast("Backup berhasil disimpan ke Google Drive!", true);
+
+          // Tampilkan Kotak Konfirmasi Cut-Off
+          cutoffRowCountText.textContent = res.backupFile.rowCount;
+          backupSuccessDetails.innerHTML = `
+            <div><strong>File:</strong> ${res.backupFile.name}</div>
+            <div><strong>Jumlah Data:</strong> ${res.backupFile.rowCount} baris</div>
+            <div><strong>Waktu:</strong> ${res.backupFile.timestamp}</div>
+            <div style="margin-top: 6px;">
+              <a href="${res.backupFile.url}" target="_blank" rel="noopener noreferrer">📂 Buka File Hasil Backup di Google Drive ↗</a>
+            </div>
+          `;
+          confirmationBox.style.display = "block";
+          confirmationBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+          // Refresh statistik
+          loadAdminStats();
+        } else {
+          showAdminToast(res.message || "Gagal membuat backup.", false);
+        }
+      } catch (err) {
+        showAdminToast("Kesalahan server saat backup: " + err.message, false);
+      } finally {
+        setBackupLoading(false);
+      }
+    });
+
+    function setBackupLoading(isLoading) {
+      btnExecuteBackup.disabled = isLoading;
+      if (isLoading) {
+        btnBackupSpinner.style.display = "inline-block";
+        btnBackupIcon.style.display = "none";
+        btnBackupText.textContent = "Memproses Backup di Google Drive...";
+      } else {
+        btnBackupSpinner.style.display = "none";
+        btnBackupIcon.style.display = "inline-block";
+        btnBackupText.textContent = "Mulai Backup Data Sekarang";
+      }
+    }
+
+    // =========================================================================
+    // EKSEKUSI TAHAP 2: CUT-OFF / PEMBERSIHAN DATA LAMA YANG SUDAH TERBACKUP
+    // =========================================================================
+    btnConfirmCutoff.addEventListener("click", async () => {
+      if (!pendingBackupData || !pendingBackupData.rowCount) {
+        showAdminToast("Tidak ada data backup aktif untuk dibersihkan.", false);
+        return;
+      }
+
+      const count = pendingBackupData.rowCount;
+      const confirmMsg = `PERINGATAN PEMBERSIHAN:\n\nAnda akan menghapus ${count} baris data lama yang SUDAH terbackup dari spreadsheet aktif.\n\nData baru yang masuk setelah proses backup TIDAK AKAN terhapus dan akan otomatis dirapikan ke baris teratas.\n\nLanjutkan pembersihan?`;
+      
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      setCutoffLoading(true);
+
+      try {
+        const res = await callAdminApi("cutOff", { rowCount: count });
+        if (res.success) {
+          showAdminToast(`Sukses! ${res.deletedCount} baris data lama dibersihkan.`, true);
+          confirmationBox.style.display = "none";
+          pendingBackupData = null;
+
+          // Perbarui tampilan statistik
+          await loadAdminStats();
+        } else {
+          showAdminToast(res.message || "Gagal membersihkan data lama.", false);
+        }
+      } catch (err) {
+        showAdminToast("Gagal melakukan cut-off: " + err.message, false);
+      } finally {
+        setCutoffLoading(false);
+      }
+    });
+
+    function setCutoffLoading(isLoading) {
+      btnConfirmCutoff.disabled = isLoading;
+      btnCancelCutoff.disabled = isLoading;
+      if (isLoading) {
+        btnCutoffSpinner.style.display = "inline-block";
+        btnCutoffIcon.style.display = "none";
+        btnCutoffText.textContent = "Membersihkan...";
+      } else {
+        btnCutoffSpinner.style.display = "none";
+        btnCutoffIcon.style.display = "inline-block";
+        btnCutoffText.textContent = "Ya, Bersihkan Data Lama";
+      }
+    }
+
+    btnCancelCutoff.addEventListener("click", () => {
+      confirmationBox.style.display = "none";
+      pendingBackupData = null;
+      showAdminToast("Data lama dipertahankan di spreadsheet aktif tanpa dihapus.", true);
+    });
+
+  </script>
+</body>
+</html>
+
