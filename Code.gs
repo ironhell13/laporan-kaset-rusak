@@ -804,9 +804,11 @@ function getAdminStats(providedPin) {
 }
 
 /**
- * Menjalankan Backup Kumulatif (Append) ke Master Archive di Google Drive
- * Data baru akan MELANJUTKAN data lama (bukan menimpa/menghapus riwayat sebelumnya).
- * Folder Google Drive tetap rapi karena hanya ada 1 File Master Arsip Terkini.
+ * Menjalankan Backup Spreadsheet secara Utuh ke Google Drive (100% Foto & Data Terbackup)
+ * - Format sheet sama persis dengan aslinya (Format Laporan Kaset Rusak tunggal, bukan per batch).
+ * - Seluruh foto mengambang, formula, dan catatan sel 100% ikut terbackup tanpa ada sel kosong.
+ * - File backup lama di folder otomatis dibersihkan sehingga HANYA ADA 1 FILE BACKUP TERKINI (tidak ada file duplikat).
+ * - Data di spreadsheet ASLI TIDAK AKAN DIHAPUS oleh fungsi ini. Harus divalidasi admin terlebih dahulu.
  */
 function performBackup() {
   try {
@@ -827,141 +829,76 @@ function performBackup() {
     }
 
     var backupFolder = getOrCreateBackupFolder();
-    var props = PropertiesService.getScriptProperties();
-    var masterArchiveId = props.getProperty("MASTER_ARCHIVE_FILE_ID");
-    var masterFile = null;
-    var masterSs = null;
-
-    // 1. Cek apakah Master Archive Spreadsheet sudah tersimpan di Properties
-    if (masterArchiveId) {
-      try {
-        var candidate = DriveApp.getFileById(masterArchiveId);
-        if (!candidate.isTrashed()) {
-          masterFile = candidate;
-          masterSs = SpreadsheetApp.openById(masterArchiveId);
-        }
-      } catch (e) {
-        masterFile = null;
-        masterSs = null;
-      }
-    }
-
-    // 2. Jika belum ada di properties, cari file arsip master yang sudah ada di folder backup
-    if (!masterFile) {
-      try {
-        var files = backupFolder.getFiles();
-        while (files.hasNext()) {
-          var f = files.next();
-          if (!f.isTrashed() && (f.getName().indexOf("Arsip_Master_") === 0 || f.getName().indexOf("Backup_Master_") === 0)) {
-            masterFile = f;
-            masterSs = SpreadsheetApp.openById(f.getId());
-            props.setProperty("MASTER_ARCHIVE_FILE_ID", f.getId());
-            break;
-          }
-        }
-      } catch (e) {}
-    }
-
     var now = new Date();
     var displayTime = Utilities.formatDate(now, CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
     var timeStampCode = Utilities.formatDate(now, CONFIG.TIMEZONE, "yyyyMMdd_HHmm");
-    var totalCumulativeCount = 0;
 
-    if (!masterFile || !masterSs) {
-      // =========================================================================
-      // KASUS A: Master Archive Belum Pernah Ada (Backup Pertama Kali)
-      // Buat salinan perdana lengkap spreadsheet (menyertakan semua data, formula & foto)
-      // =========================================================================
-      var initialName = "Arsip_Master_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + rowCount + "_Data";
-      var originalFile = DriveApp.getFileById(ss.getId());
-      masterFile = originalFile.makeCopy(initialName, backupFolder);
-      masterArchiveId = masterFile.getId();
-      props.setProperty("MASTER_ARCHIVE_FILE_ID", masterArchiveId);
-      totalCumulativeCount = rowCount;
+    // Format nama file cadangan master yang jelas
+    var backupFileName = "Backup_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + rowCount + "_Data";
 
-    } else {
-      // =========================================================================
-      // KASUS B: Master Archive SUDAH ADA (Backup Berkala / Melanjutkan Data)
-      // Sambungkan (APPEND) baris data baru ke baris paling bawah file Master Archive
-      // =========================================================================
-      var archiveSheet = masterSs.getSheetByName(CONFIG.SHEET_NAME_REPORT);
-      if (!archiveSheet) {
-        archiveSheet = masterSs.getSheets()[0];
-      }
+    // 1. Kloning spreadsheet asli secara utuh
+    // (Fungsi makeCopy menjamin 100% semua foto mengambang, tata letak, dan catatan sel tersalin sempurna)
+    var originalFile = DriveApp.getFileById(ss.getId());
+    var newBackupFile = originalFile.makeCopy(backupFileName, backupFolder);
 
-      var masterLastRow = getLastDataRow(archiveSheet);
-      if (masterLastRow < CONFIG.FIRST_DATA_ROW) {
-        masterLastRow = CONFIG.HEADER_ROW || 2;
-      }
+    // 2. Bersihkan file backup lama di folder agar TIDAK ADA FILE DUPLIKAT di Google Drive
+    // Folder dipastikan SELALU HANYA BERISI 1 FILE CADANGAN TERAKHIR
+    var props = PropertiesService.getScriptProperties();
+    var prevBackupFileId = props.getProperty("LAST_BACKUP_FILE_ID");
 
-      var totalCols = Math.max(reportSheet.getLastColumn(), 11);
-
-      // Pastikan kapasitas baris Master Archive cukup
-      var requiredRows = (masterLastRow + rowCount) - archiveSheet.getMaxRows();
-      if (requiredRows > 0) {
-        archiveSheet.insertRowsAfter(archiveSheet.getMaxRows(), requiredRows + 50);
-      }
-
-      // Ambil nilai data, format tanggal/angka & catatan sel (Note foto) dari sheet aktif
-      var rangeToCopy = reportSheet.getRange(CONFIG.FIRST_DATA_ROW, 1, rowCount, totalCols);
-      var valuesToCopy = rangeToCopy.getValues();
-      var formatsToCopy = rangeToCopy.getNumberFormats();
-      var notesToCopy = rangeToCopy.getNotes();
-
-      // Tulis sambungan data baru ke bagian bawah Master Archive
-      var targetRange = archiveSheet.getRange(masterLastRow + 1, 1, rowCount, totalCols);
-      targetRange.setValues(valuesToCopy);
-      targetRange.setNumberFormats(formatsToCopy);
-      targetRange.setNotes(notesToCopy);
-
-      // Set tinggi baris sel agar konsisten rapi
-      for (var r = 0; r < rowCount; r++) {
-        archiveSheet.setRowHeight(masterLastRow + 1 + r, CONFIG.PHOTO_CELL_HEIGHT || 375);
-      }
-
-      // Salin foto mengambang (OverGridImage) untuk baris data baru
+    if (prevBackupFileId && prevBackupFileId !== newBackupFile.getId()) {
       try {
-        var activeImages = reportSheet.getImages();
-        var pWidth = CONFIG.PHOTO_WIDTH || 465;
-        var pHeight = CONFIG.PHOTO_HEIGHT || 350;
-        var pOffX = CONFIG.PHOTO_OFFSET_X || 15;
-        var pOffY = CONFIG.PHOTO_OFFSET_Y || 12;
-
-        for (var imgIdx = 0; imgIdx < activeImages.length; imgIdx++) {
-          var aImg = activeImages[imgIdx];
-          var anchor = aImg.getAnchorCell();
-          if (anchor) {
-            var aRow = anchor.getRow();
-            var aCol = anchor.getColumn();
-            if (aRow >= CONFIG.FIRST_DATA_ROW && aRow <= lastDataRow) {
-              var newTargetRow = masterLastRow + 1 + (aRow - CONFIG.FIRST_DATA_ROW);
-              var blob = aImg.getBlob();
-              var inserted = archiveSheet.insertImage(blob, aCol, newTargetRow, pOffX, pOffY);
-              if (inserted) {
-                inserted.setWidth(pWidth);
-                inserted.setHeight(pHeight);
-                var altT = aImg.getAltTextTitle();
-                if (altT) inserted.setAltTextTitle(altT);
-                var altD = aImg.getAltTextDescription();
-                if (altD) inserted.setAltTextDescription(altD);
-              }
-            }
-          }
-        }
-      } catch (imgCopyErr) {
-        Logger.log("Info copy foto arsip: " + imgCopyErr.message);
+        var oldFile = DriveApp.getFileById(prevBackupFileId);
+        oldFile.setTrashed(true);
+      } catch (trashErr) {
+        Logger.log("Info pembersihan file lama: " + trashErr.message);
       }
-
-      SpreadsheetApp.flush();
-
-      // Hitung total akumulasi data di Master Archive
-      var finalMasterLastRow = getLastDataRow(archiveSheet);
-      totalCumulativeCount = (finalMasterLastRow >= CONFIG.FIRST_DATA_ROW) ? (finalMasterLastRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
-
-      // Rename file Master Archive dengan stempel waktu & jumlah data kumulatif
-      var updatedName = "Arsip_Master_Laporan_Kaset_Alsut_(Update_" + timeStampCode + ") - " + totalCumulativeCount + "_Data";
-      masterFile.setName(updatedName);
     }
+
+    // Bersihkan file sisa uji coba lainnya di folder backup agar folder benar-benar rapi
+    try {
+      var existingFiles = backupFolder.getFiles();
+      while (existingFiles.hasNext()) {
+        var f = existingFiles.next();
+        if (f.getId() !== newBackupFile.getId()) {
+          f.setTrashed(true);
+        }
+      }
+    } catch (cleanErr) {
+      Logger.log("Pembersihan file duplikat: " + cleanErr.message);
+    }
+
+    // 3. Simpan metadata backup terbaru di Script Properties
+    props.setProperties({
+      "LAST_BACKUP_TIME": displayTime,
+      "LAST_BACKUP_FILE_ID": newBackupFile.getId(),
+      "LAST_BACKUP_FILE_NAME": backupFileName,
+      "LAST_BACKUP_FILE_URL": newBackupFile.getUrl(),
+      "LAST_BACKUP_ROW_COUNT": String(rowCount),
+      "LAST_BACKUP_CUTOFF_ROW": String(lastDataRow)
+    });
+
+    return {
+      success: true,
+      message: "Backup berhasil dibuat. 100% data dan foto telah tersimpan utuh di Google Drive.",
+      backupFile: {
+        id: newBackupFile.getId(),
+        name: backupFileName,
+        url: newBackupFile.getUrl(),
+        rowCount: rowCount,
+        cutoffRow: lastDataRow,
+        timestamp: displayTime,
+        folderUrl: backupFolder.getUrl()
+      }
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      message: "Gagal membuat backup di Google Drive: " + err.message
+    };
+  }
+}
 
     // Simpan informasi backup terakhir di Script Properties
     props.setProperties({

@@ -628,7 +628,7 @@
         </div>
 
         <div class="info-callout">
-          💡 <strong>Cara Kerja Aman & Rapi (Single Rolling Backup):</strong> Sistem membuat salinan lengkap ke Google Drive dan otomatis menggantikan file backup lama sehingga folder Drive Anda selalu bersih dan hanya berisi <strong>1 File Master Terkini</strong>. Setelah backup berhasil, sistem akan menanyakan apakah Anda ingin membersihkan data lama tersebut dari spreadsheet aktif.
+          💡 <strong>Cara Kerja Aman & Validasi Admin:</strong> Sistem membuat salinan cadangan lengkap spreadsheet (100% foto dan data utuh) ke Google Drive. <strong>Data di spreadsheet asli TIDAK AKAN langsung dihapus</strong>. Anda dapat membuka file hasil backup di Google Drive untuk memvalidasi terlebih dahulu sebelum memutuskan membersihkan data lama.
         </div>
 
         <!-- TOMBOL UTAMA BACKUP -->
@@ -658,8 +658,9 @@
           </div>
 
           <div class="cutoff-alert-box">
-            <strong>⚠️ Langkah 2: Pembersihan Data Lama</strong><br>
-            Apakah Anda ingin menghapus <strong id="cutoffRowCountText">0</strong> baris data yang <strong>SUDAH</strong> dicadangkan tersebut dari spreadsheet aktif?<br><br>
+            <strong>⚠️ Langkah 2: Validasi & Pembersihan Data Lama</strong><br>
+            File cadangan telah berhasil dibuat di Google Drive. Silakan klik link di atas untuk <strong>memvalidasi data & fotonya terlebih dahulu</strong>.<br><br>
+            Jika sudah valid, apakah Anda ingin membersihkan <strong id="cutoffRowCountText">0</strong> baris data yang <strong>SUDAH</strong> dicadangkan tersebut dari spreadsheet aktif agar tidak penuh?<br><br>
             🛡️ <em>Data baru yang masuk dari tim lapangan selama proses backup <strong>TIDAK AKAN terhapus</strong> dan posisinya akan otomatis digeser rapi ke barisan awal.</em>
           </div>
 
@@ -670,11 +671,11 @@
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-              <span id="btnCutoffText">Ya, Bersihkan Data Lama</span>
+              <span id="btnCutoffText">Data Valid, Bersihkan Data Lama</span>
             </button>
 
             <button type="button" id="btnCancelCutoff" class="btn-cutoff-cancel">
-              Selesai Tanpa Hapus
+              Selesai (Pertahankan Data di Asli)
             </button>
           </div>
         </div>
@@ -909,16 +910,14 @@
 
           // Tampilkan Kotak Konfirmasi Cut-Off
           cutoffRowCountText.textContent = res.backupFile.rowCount;
-          const totalCumText = res.backupFile.totalCumulative 
-            ? `<div><strong>Total Akumulasi di Master Arsip:</strong> ${res.backupFile.totalCumulative} baris data</div>`
-            : '';
           backupSuccessDetails.innerHTML = `
-            <div><strong>File Master:</strong> ${res.backupFile.name}</div>
-            <div><strong>Data Baru Disambungkan:</strong> ${res.backupFile.rowCount} baris</div>
-            ${totalCumText}
-            <div><strong>Waktu Update:</strong> ${res.backupFile.timestamp}</div>
-            <div style="margin-top: 8px;">
-              <a href="${res.backupFile.url}" target="_blank" rel="noopener noreferrer">📂 Buka Master Arsip di Google Drive ↗</a>
+            <div><strong>File Backup:</strong> ${res.backupFile.name}</div>
+            <div><strong>Jumlah Data & Foto:</strong> ${res.backupFile.rowCount} baris (100% Foto & Data Utuh)</div>
+            <div><strong>Waktu Backup:</strong> ${res.backupFile.timestamp}</div>
+            <div style="margin-top: 10px;">
+              <a href="${res.backupFile.url}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.2); padding: 7px 12px; border-radius: 6px; color: #86efac; font-weight: 700; text-decoration: none; border: 1px solid #22c55e;">
+                📂 Buka & Validasi File Hasil Backup di Google Drive ↗
+              </a>
             </div>
           `;
           confirmationBox.style.display = "block";
