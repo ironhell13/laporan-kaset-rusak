@@ -2434,7 +2434,7 @@
         typeMesin: selectTypeMesin.value.trim(),
         fotoTestCash: photoState.fotoTestCash.optimizedBase64 || null,
         fotoLabelBad: photoState.fotoLabelBad.optimizedBase64 || null,
-        allowDuplicate: false
+        allowDuplicate: true
       };
 
       setSubmitLoading(true);
@@ -2442,9 +2442,7 @@
     });
 
     function showDuplicateModal(info) {
-      duplicateModalDesc.innerHTML = 
-        `Nomor kaset <strong>${escapeHtml(info.nomorKaset)}</strong> sudah pernah dilaporkan pada tanggal <strong>${escapeHtml(info.tanggal)}</strong> untuk WSID <strong>${escapeHtml(info.wsid)}</strong> (${escapeHtml(info.lokasi || "")}).<br><br>Tetap simpan laporan ini?`;
-      duplicateModal.style.display = "flex";
+      // Notifikasi duplikasi dinonaktifkan sesuai permintaan pengguna (langsung simpan)
     }
 
     btnDuplicateCancel.addEventListener("click", function() {
@@ -2467,12 +2465,6 @@
       try {
         const response = await apiRequest("save-report", { payload: payload }, "saveReport");
         setSubmitLoading(false);
-
-        if (response && response.isDuplicate && response.duplicateInfo) {
-          pendingPayload = payload;
-          showDuplicateModal(response.duplicateInfo);
-          return;
-        }
 
         if (response && response.success) {
           handleSaveSuccess(payload, response.data);

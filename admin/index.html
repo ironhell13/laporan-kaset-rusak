@@ -682,6 +682,32 @@
 
       </div>
 
+      <!-- REPAIR & PHOTO MAINTENANCE CARD -->
+      <div class="card" style="margin-top: 14px;">
+        <div class="action-header">
+          <div class="action-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            Pemeliharaan Tata Letak Foto Spreadsheet
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.5; margin-bottom: 14px;">
+          Gunakan tombol ini jika foto di spreadsheet tampak bertumpuk di sel tertentu. Sistem akan membaca metadata unik pada setiap foto dan otomatis memindahkannya kembali ke baris nomor kaset masing-masing secara berurutan.
+        </div>
+
+        <button type="button" id="btnRealignPhotos" class="btn-refresh" style="width: 100%; justify-content: center; height: 40px; font-size: 0.84rem; background: #1e293b; border-color: #3b82f6; color: #93c5fd; font-weight: 700;">
+          <span id="btnRealignSpinner" class="spinner" style="display: none;"></span>
+          <svg id="btnRealignIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span id="btnRealignText">🔄 Rapikan Semua Foto ke Baris Masing-Masing</span>
+        </button>
+      </div>
+
       <!-- DRIVE FOLDER SHORTCUT -->
       <div class="card" style="padding: 14px 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1003,6 +1029,42 @@
       confirmationBox.style.display = "none";
       pendingBackupData = null;
       showAdminToast("Data lama dipertahankan di spreadsheet aktif tanpa dihapus.", true);
+    });
+
+    // =========================================================================
+    // FITUR PEMELIHARAAN & PERAPIAN FOTO MENUMPUK
+    // =========================================================================
+    const btnRealignPhotos = document.getElementById("btnRealignPhotos");
+    const btnRealignSpinner = document.getElementById("btnRealignSpinner");
+    const btnRealignIcon = document.getElementById("btnRealignIcon");
+    const btnRealignText = document.getElementById("btnRealignText");
+
+    btnRealignPhotos.addEventListener("click", async () => {
+      const confirmMsg = "Jalankan otomatisasi perapian foto di Spreadsheet?\n\nSistem akan menata ulang foto yang menumpuk kembali ke baris nomor kasetnya masing-masing secara berurutan.";
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      btnRealignPhotos.disabled = true;
+      btnRealignSpinner.style.display = "inline-block";
+      btnRealignIcon.style.display = "none";
+      btnRealignText.textContent = "Sedang Merapikan Foto...";
+
+      try {
+        const res = await callAdminApi("realignPhotos");
+        if (res.success) {
+          showAdminToast(res.message || "Foto berhasil dirapikan!", true);
+        } else {
+          showAdminToast(res.message || "Gagal merapikan foto.", false);
+        }
+      } catch (err) {
+        showAdminToast("Kesalahan server: " + err.message, false);
+      } finally {
+        btnRealignPhotos.disabled = false;
+        btnRealignSpinner.style.display = "none";
+        btnRealignIcon.style.display = "inline-block";
+        btnRealignText.textContent = "🔄 Rapikan Semua Foto ke Baris Masing-Masing";
+      }
     });
 
   </script>

@@ -292,67 +292,10 @@ function getInitialData() {
 }
 
 /**
- * Cek apakah Nomor Kaset sudah pernah dilaporkan sebelumnya di kolom D (Col 4)
- * Kolom A=WSID, B=Lokasi, C=Tanggal, D=Nomor Kaset
+ * Cek duplikasi kaset (Dinonaktifkan sesuai permintaan pengguna agar laporan selalu langsung disimpan tanpa notifikasi peringatan)
  */
 function checkDuplicate(nomorKaset) {
-  try {
-    if (!nomorKaset) {
-      return { success: true, isDuplicate: false };
-    }
-
-    var cleanKaset = String(nomorKaset).trim().toUpperCase();
-    var ss = getSpreadsheet();
-    var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
-    if (!sheet) {
-      return { success: true, isDuplicate: false };
-    }
-
-    var lastRow = sheet.getLastRow();
-    if (lastRow < CONFIG.FIRST_DATA_ROW) {
-      return { success: true, isDuplicate: false };
-    }
-
-    var numRows = lastRow - CONFIG.FIRST_DATA_ROW + 1;
-    // Kolom A-D (Col 1-4)
-    var values = sheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numRows, 4).getValues();
-
-    for (var i = values.length - 1; i >= 0; i--) {
-      var row = values[i];
-      var existingKaset = String(row[3] || "").trim().toUpperCase();
-      if (existingKaset === cleanKaset) {
-        var existingWsid = String(row[0] || "-").trim();
-        var existingLokasi = String(row[1] || "-").trim();
-        var rawDate = row[2];
-        var existingDate = "-";
-        if (rawDate instanceof Date) {
-          existingDate = formatIndonesianDate(rawDate);
-        } else if (rawDate) {
-          existingDate = String(rawDate).trim();
-        }
-
-        return {
-          success: true,
-          isDuplicate: true,
-          duplicateInfo: {
-            nomorKaset: cleanKaset,
-            wsid: existingWsid,
-            lokasi: existingLokasi,
-            tanggal: existingDate,
-            rowNumber: CONFIG.FIRST_DATA_ROW + i
-          }
-        };
-      }
-    }
-
-    return { success: true, isDuplicate: false };
-
-  } catch (err) {
-    return {
-      success: false,
-      message: "Gagal memeriksa duplikasi: " + err.message
-    };
-  }
+  return { success: true, isDuplicate: false };
 }
 
 /**
@@ -504,7 +447,7 @@ function saveReport(payload) {
   var normalizedSN = normalizeSN(rawSN);
   var moduleVal = String(payload.module !== null && payload.module !== undefined ? payload.module : "").trim();
   var typeMesin = String(payload.typeMesin || "").trim();
-  var allowDuplicate = !!payload.allowDuplicate;
+  var allowDuplicate = true; // Duplikasi diperbolehkan tanpa notifikasi sesuai permintaan user
 
   if (!wsid || !nomorKaset || !normalizedSN || !moduleVal || !typeMesin) {
     return { success: false, message: "Semua kolom wajib diisi (WSID, Lokasi, Nomor Kaset, S/N, Module, Type Mesin)." };
@@ -573,32 +516,7 @@ function saveReport(payload) {
       var numToCheck = lastRow - CONFIG.FIRST_DATA_ROW + 1;
       var dataCols = reportSheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numToCheck, Math.max(colMap.nomorKaset, 4)).getValues();
 
-      // Cek duplikasi nomor kaset jika belum disetujui pengguna
-      if (!allowDuplicate) {
-        for (var i = dataCols.length - 1; i >= 0; i--) {
-          var exKaset = String(dataCols[i][colMap.nomorKaset - 1] || "").trim().toUpperCase();
-          if (exKaset === nomorKaset) {
-            var rawDate = dataCols[i][colMap.tanggal - 1];
-            var exDate = (rawDate instanceof Date) ? formatIndonesianDate(rawDate) : String(rawDate || "-");
-
-            lock.releaseLock();
-            lockAcquired = false;
-
-            return {
-              success: false,
-              isDuplicate: true,
-              duplicateInfo: {
-                nomorKaset: nomorKaset,
-                wsid: String(dataCols[i][colMap.wsid - 1] || "-"),
-                lokasi: String(dataCols[i][colMap.lokasi - 1] || "-"),
-                tanggal: exDate
-              }
-            };
-          }
-        }
-      }
-
-      // Hitung baris target dari Kolom A yang sudah terisi
+      // Hitung baris target dari Kolom A yang sudah terisi (langsung simpan tanpa notifikasi duplikasi)
       var lastFilledOffset = -1;
       for (var r = dataCols.length - 1; r >= 0; r--) {
         if (dataCols[r][0] !== "" && dataCols[r][0] !== null && dataCols[r][0] !== undefined) {
@@ -712,6 +630,154 @@ function updateHeaderSpreadsheet() {
     return "Berhasil memperbarui header menjadi: Tanggal Sislok / Bongkaran";
   }
   return "Kolom tanggal tidak ditemukan.";
+}
+
+/**
+ * Menu otomatis di Google Spreadsheet saat file dibuka oleh pengguna
+ */
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu("Laporan Kaset Alsut")
+      .addItem("🔄 Rapikan Semua Foto ke Baris Masing-Masing", "realignStackedPhotos")
+      .addItem("🧹 Bersihkan Foto Menumpuk Duplikat", "cleanDuplicateStackedPhotos")
+      .addItem("✏️ Perbarui Header Spreadsheet", "updateHeaderSpreadsheet")
+      .addToUi();
+  } catch (e) {
+    Logger.log("Menu UI dilewati (mode headless/API): " + e.message);
+  }
+}
+
+/**
+ * Merapikan seluruh foto yang menumpuk kembali ke baris nomor kaset masing-masing secara berurutan.
+ * Mendeteksi metadata unik (Alt Text Title & Description) yang otomatis tersemat di setiap foto.
+ */
+function realignStackedPhotos() {
+  try {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+    if (!sheet) {
+      return { success: false, message: "Sheet '" + CONFIG.SHEET_NAME_REPORT + "' tidak ditemukan." };
+    }
+
+    var colMap = getReportColumnMapping(sheet);
+    var lastRow = sheet.getLastRow();
+    if (lastRow < CONFIG.FIRST_DATA_ROW) {
+      return { success: false, message: "Tidak ada baris data pada spreadsheet." };
+    }
+
+    var numRows = lastRow - CONFIG.FIRST_DATA_ROW + 1;
+    var dataVals = sheet.getRange(CONFIG.FIRST_DATA_ROW, 1, numRows, Math.max(colMap.nomorKaset, 4)).getValues();
+
+    // Buat pemetaan: Nomor Kaset & WSID -> Nomor Baris di spreadsheet
+    var kasetToRow = {};
+    for (var r = 0; r < dataVals.length; r++) {
+      var rawKaset = String(dataVals[r][colMap.nomorKaset - 1] || "");
+      var cleanK = rawKaset.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      if (cleanK) {
+        kasetToRow[cleanK] = CONFIG.FIRST_DATA_ROW + r;
+      }
+    }
+
+    var images = sheet.getImages();
+    if (!images || images.length === 0) {
+      return { success: true, message: "Tidak ada foto yang ditemukan pada sheet laporan." };
+    }
+
+    var realignedCount = 0;
+    var duplicateRemoved = 0;
+    var occupiedCells = {}; // Format: "col_row" -> boolean
+
+    var pWidth = CONFIG.PHOTO_WIDTH || 465;
+    var pHeight = CONFIG.PHOTO_HEIGHT || 350;
+    var pOffX = CONFIG.PHOTO_OFFSET_X || 15;
+    var pOffY = CONFIG.PHOTO_OFFSET_Y || 12;
+
+    for (var i = 0; i < images.length; i++) {
+      var img = images[i];
+      var title = "";
+      var desc = "";
+      try {
+        title = img.getAltTextTitle() || "";
+        desc = img.getAltTextDescription() || "";
+      } catch (e) {}
+
+      var isTestCash = (title.indexOf("RESULT_TEST") >= 0 || desc.indexOf("Result Test Cash") >= 0);
+      var isLabelBad = (title.indexOf("LABEL_") >= 0 || desc.indexOf("Label Bad") >= 0);
+
+      var targetCol = isTestCash ? (colMap.fotoTestCash || 8) : (isLabelBad ? (colMap.fotoLabelBad || 9) : 0);
+      if (!targetCol) {
+        continue;
+      }
+
+      // Cari nomor kaset dari metadata description atau title
+      var matchedKaset = "";
+      var kasetMatch = desc.match(/Nomor\s*Kaset\s*:\s*([^\n\r]+)/i);
+      if (kasetMatch && kasetMatch[1]) {
+        matchedKaset = kasetMatch[1].replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      } else {
+        var parts = title.split("_");
+        if (parts.length >= 4) {
+          matchedKaset = parts[2].replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        }
+      }
+
+      if (matchedKaset && kasetToRow[matchedKaset]) {
+        var targetRow = kasetToRow[matchedKaset];
+        var cellKey = targetCol + "_" + targetRow;
+
+        if (occupiedCells[cellKey]) {
+          // Jika sel target sudah terisi foto yang valid, hapus foto duplikat yang menumpuk
+          try {
+            img.remove();
+            duplicateRemoved++;
+          } catch (remErr) {}
+        } else {
+          try {
+            img.setAnchorCell(sheet.getRange(targetRow, targetCol));
+            img.setAnchorCellXOffset(pOffX);
+            img.setAnchorCellYOffset(pOffY);
+            img.setWidth(pWidth);
+            img.setHeight(pHeight);
+            sheet.setRowHeight(targetRow, CONFIG.PHOTO_CELL_HEIGHT || 375);
+            occupiedCells[cellKey] = true;
+            realignedCount++;
+          } catch (moveErr) {}
+        }
+      }
+    }
+
+    SpreadsheetApp.flush();
+
+    var msg = "Selesai! Sebanyak " + realignedCount + " foto berhasil dirapikan ke baris masing-masing";
+    if (duplicateRemoved > 0) {
+      msg += " dan " + duplicateRemoved + " foto duplikat menumpuk berhasil dibersihkan.";
+    } else {
+      msg += ".";
+    }
+
+    Logger.log(msg);
+    return {
+      success: true,
+      message: msg,
+      realignedCount: realignedCount,
+      duplicateRemoved: duplicateRemoved
+    };
+
+  } catch (err) {
+    Logger.log("Error realignStackedPhotos: " + err.message);
+    return {
+      success: false,
+      message: "Gagal merapikan foto: " + err.message
+    };
+  }
+}
+
+/**
+ * Membersihkan foto menumpuk duplikat pada sheet
+ */
+function cleanDuplicateStackedPhotos() {
+  return realignStackedPhotos();
 }
 
 // =========================================================================
@@ -902,8 +968,9 @@ function performBackup() {
 
 /**
  * Menjalankan Cut-Off (Pembersihan Data Lama yang Sudah Terbackup)
- * Menjamin HANYA data yang dicadangkan yang dihapus, data baru dipertahankan & digeser ke baris awal.
- * DIOPTIMASI: Langsung menggunakan sheet.deleteRows() sehingga ribuan data & fotonya terhapus dalam hitungan detik.
+ * Menjamin HANYA data yang dicadangkan yang dibersihkan, data baru dipertahankan & digeser ke baris awal.
+ * METODE AMAN ANTI FOTO MENUMPUK: Menggunakan Sheet Re-creation sehingga seluruh drawing/OverGridImage
+ * lama langsung musnah seketika tanpa menumpuk di 2 sel.
  */
 function performCutOff(rowCountToCut, providedPin) {
   if (CONFIG.ADMIN_PIN && String(providedPin || "").trim() !== String(CONFIG.ADMIN_PIN).trim()) {
@@ -937,21 +1004,46 @@ function performCutOff(rowCountToCut, providedPin) {
     }
     var actualCountToDelete = Math.min(count, availableCount);
 
-    // Pastikan spreadsheet memiliki cadangan baris kosong sebelum baris lama dihapus
-    var currentMax = sheet.getMaxRows();
-    if (currentMax - actualCountToDelete < 50) {
-      sheet.insertRowsAfter(currentMax, 50);
+    // =========================================================================
+    // METODE AMAN 100%: SHEET RECREATION (ANTI FOTO MENUMPUK)
+    // =========================================================================
+    // Jangan gunakan sheet.deleteRows() karena Google Sheets tidak menghapus OverGridImage
+    // dan menyebabkan ribuan foto menumpuk di 2 sel.
+    // Menghapus sheet lama via ss.deleteSheet() memusnahkan SELURUH foto lama seketika tanpa sisa!
+    var originalIndex = sheet.getIndex();
+    var tempSheet = ss.insertSheet(CONFIG.SHEET_NAME_REPORT + "_Clean", originalIndex);
+    var maxCols = Math.max(sheet.getLastColumn(), 11);
+
+    // 1. Salin header (Baris 1 & Baris 2) dan catatan/format
+    sheet.getRange(1, 1, CONFIG.HEADER_ROW, maxCols).copyTo(tempSheet.getRange(1, 1));
+
+    // 2. Salin lebar seluruh kolom agar tata letak persis sama
+    for (var col = 1; col <= maxCols; col++) {
+      tempSheet.setColumnWidth(col, sheet.getColumnWidth(col));
     }
 
-    // Hapus baris data lama sekaligus (Google Sheets secara native otomatis menghapus
-    // baris dan semua gambar/foto yang tertambat pada baris tersebut dalam 1 operasi batch super cepat ~1 detik)
-    sheet.deleteRows(CONFIG.FIRST_DATA_ROW, actualCountToDelete);
+    // 3. Jika ada baris data baru yang masuk setelah cut-off, pindahkan datanya
+    var remainingCount = 0;
+    if (actualCountToDelete < availableCount) {
+      var remainingRows = availableCount - actualCountToDelete;
+      var startRowSource = CONFIG.FIRST_DATA_ROW + actualCountToDelete;
+      var sourceRange = sheet.getRange(startRowSource, 1, remainingRows, maxCols);
+      sourceRange.copyTo(tempSheet.getRange(CONFIG.FIRST_DATA_ROW, 1));
+      remainingCount = remainingRows;
+    }
+
+    // 4. Pastikan kapasitas baris cukup untuk input baru
+    if (tempSheet.getMaxRows() < 100) {
+      tempSheet.insertRowsAfter(tempSheet.getMaxRows(), 50);
+    }
+
+    // 5. Hapus sheet lama secara utuh (Semua ribuan foto mengambang lama terhapus sempurna!)
+    ss.deleteSheet(sheet);
+
+    // 6. Ganti nama tempSheet kembali menjadi nama sheet laporan utama
+    tempSheet.setName(CONFIG.SHEET_NAME_REPORT);
 
     SpreadsheetApp.flush();
-
-    // Hitung sisa data terbaru yang masih ada
-    var newLastRow = getLastDataRow(sheet);
-    var remainingCount = (newLastRow >= CONFIG.FIRST_DATA_ROW) ? (newLastRow - CONFIG.FIRST_DATA_ROW + 1) : 0;
 
     var cutoffTime = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
     PropertiesService.getScriptProperties().setProperty("LAST_CUTOFF_TIME", cutoffTime);
@@ -960,7 +1052,7 @@ function performCutOff(rowCountToCut, providedPin) {
       success: true,
       deletedCount: actualCountToDelete,
       remainingCount: remainingCount,
-      message: "Sebanyak " + actualCountToDelete + " baris data lama berhasil dibersihkan! Sisa " + remainingCount + " baris data terbaru kini tersusun rapi di barisan awal."
+      message: "Sebanyak " + actualCountToDelete + " baris data lama berhasil dibersihkan! Spreadsheet kini bersih, ringan, dan bebas dari foto menumpuk."
     };
 
   } catch (err) {
@@ -996,6 +1088,8 @@ function handleAdminAction(body) {
     return performBackup();
   } else if (subAction === "cutOff") {
     return performCutOff(body.rowCount, pin);
+  } else if (subAction === "realignPhotos" || subAction === "cleanStackedPhotos") {
+    return realignStackedPhotos();
   } else {
     return { success: false, message: "Sub-aksi admin '" + subAction + "' tidak dikenali." };
   }
