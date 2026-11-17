@@ -641,6 +641,7 @@ function onOpen() {
       .createMenu("Laporan Kaset Alsut")
       .addItem("🔄 Rapikan Semua Foto ke Baris Masing-Masing", "realignStackedPhotos")
       .addItem("🧹 Bersihkan Foto Menumpuk Duplikat", "cleanDuplicateStackedPhotos")
+      .addItem("🗑️ Kosongkan Seluruh Data & Foto Sheet Ini", "clearSheetDataAndPhotos")
       .addItem("✏️ Perbarui Header Spreadsheet", "updateHeaderSpreadsheet")
       .addToUi();
   } catch (e) {
@@ -1070,6 +1071,199 @@ function performCutOff(rowCountToCut, providedPin) {
 }
 
 /**
+ * Membersihkan seluruh data dan foto di dalam file backup Google Drive secara berbarengan.
+ * Menggunakan teknik Sheet Recreation (deleteSheet) sehingga seluruh ribuan foto mengambang
+ * dan baris data terhapus seketika tanpa sisa foto mengambang yang menumpuk.
+ */
+function cleanBackupFileDataAndPhotos() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var backupFileId = props.getProperty("LAST_BACKUP_FILE_ID");
+
+    // Jika tidak ada di Script Properties, cari file cadangan di folder backup
+    if (!backupFileId) {
+      var backupFolder = getOrCreateBackupFolder();
+      var files = backupFolder.getFiles();
+      if (files.hasNext()) {
+        backupFileId = files.next().getId();
+      }
+    }
+
+    if (!backupFileId) {
+      return {
+        success: false,
+        message: "Tidak ditemukan file backup di Google Drive untuk dibersihkan."
+      };
+    }
+
+    var backupSs = SpreadsheetApp.openById(backupFileId);
+    var sheet = backupSs.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+    if (!sheet) {
+      sheet = backupSs.getSheets()[0];
+    }
+
+    var originalIndex = sheet.getIndex();
+    var maxCols = Math.max(sheet.getLastColumn(), 11);
+
+    // 1. Buat sheet baru yang bersih di dalam file backup
+    var tempSheet = backupSs.insertSheet(CONFIG.SHEET_NAME_REPORT + "_Clean", originalIndex);
+
+    // 2. Salin header (Baris 1 & Baris 2)
+    sheet.getRange(1, 1, CONFIG.HEADER_ROW, maxCols).copyTo(tempSheet.getRange(1, 1));
+
+    // 3. Salin lebar seluruh kolom agar format laporan tetap rapi
+    for (var col = 1; col <= maxCols; col++) {
+      tempSheet.setColumnWidth(col, sheet.getColumnWidth(col));
+    }
+
+    // 4. Pastikan kapasitas baris awal mencukupi
+    if (tempSheet.getMaxRows() < 100) {
+      tempSheet.insertRowsAfter(tempSheet.getMaxRows(), 50);
+    }
+
+    // 5. HAPUS SHEET LAMA SECARA UTUH!
+    // (Google Sheets secara otomatis memusnahkan SELURUH baris data dan SELURUH foto mengambang seketika!)
+    backupSs.deleteSheet(sheet);
+
+    // 6. Ganti nama tempSheet kembali menjadi nama sheet laporan utama
+    tempSheet.setName(CONFIG.SHEET_NAME_REPORT);
+
+    SpreadsheetApp.flush();
+
+    // Perbarui metadata backup di Script Properties
+    var updateTime = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd MMM yyyy, HH:mm");
+    props.setProperties({
+      "LAST_BACKUP_ROW_COUNT": "0",
+      "LAST_BACKUP_TIME": "Dibersihkan pada " + updateTime
+    });
+
+    return {
+      success: true,
+      message: "Seluruh data dan foto di dalam file backup berhasil dibersihkan berbarengan! File backup kini bersih dan kosong.",
+      backupFile: {
+        id: backupSs.getId(),
+        name: backupSs.getName(),
+        url: backupSs.getUrl()
+      }
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      message: "Gagal membersihkan data & foto di file backup: " + err.message
+    };
+  }
+}
+
+/**
+ * Menghapus file backup dari Google Drive (memindahkan ke tong sampah Drive)
+ * Mengatasi masalah file backup kepenuhan dengan membuang file backup lama secara total (data + foto 100% musnah).
+ */
+function deleteBackupFile() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var backupFileId = props.getProperty("LAST_BACKUP_FILE_ID");
+    var backupFolder = getOrCreateBackupFolder();
+    var deletedCount = 0;
+    var lastFileName = props.getProperty("LAST_BACKUP_FILE_NAME") || "File Backup";
+
+    // 1. Hapus file backup yang terdaftar di Properties
+    if (backupFileId) {
+      try {
+        var file = DriveApp.getFileById(backupFileId);
+        file.setTrashed(true);
+        deletedCount++;
+      } catch (e) {
+        Logger.log("File backup ID tidak ditemukan atau sudah terhapus: " + e.message);
+      }
+    }
+
+    // 2. Bersihkan file sisa lainnya di folder backup agar folder benar-benar kosong
+    try {
+      var files = backupFolder.getFiles();
+      while (files.hasNext()) {
+        var f = files.next();
+        f.setTrashed(true);
+        deletedCount++;
+      }
+    } catch (e2) {}
+
+    // 3. Reset Script Properties
+    props.deleteProperty("LAST_BACKUP_FILE_ID");
+    props.deleteProperty("LAST_BACKUP_FILE_NAME");
+    props.deleteProperty("LAST_BACKUP_FILE_URL");
+    props.deleteProperty("LAST_BACKUP_ROW_COUNT");
+    props.deleteProperty("LAST_BACKUP_CUTOFF_ROW");
+    props.setProperty("LAST_BACKUP_TIME", "File backup telah dihapus");
+
+    return {
+      success: true,
+      message: "File backup berhasil dihapus dari Google Drive! Folder backup kini kosong.",
+      deletedCount: deletedCount
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      message: "Gagal menghapus file backup dari Drive: " + err.message
+    };
+  }
+}
+
+/**
+ * Mengosongkan seluruh baris data dan semua foto mengambang pada sheet yang sedang aktif,
+ * menyisakan format header laporan yang bersih.
+ * Dapat dipicu langsung dari menu Google Sheets.
+ */
+function clearSheetDataAndPhotos() {
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (e) {}
+
+  if (ui) {
+    var response = ui.alert(
+      "Konfirmasi Pembersihan Lembar",
+      "PERINGATAN: Seluruh baris data teks dan SEMUA foto pada lembar ini akan dihapus secara bersamaan.\n\nLanjutkan pembersihan?",
+      ui.ButtonSet.YES_NO
+    );
+    if (response !== ui.Button.YES) {
+      return "Dibatalkan oleh pengguna.";
+    }
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REPORT);
+  if (!sheet) {
+    sheet = ss.getActiveSheet();
+  }
+
+  var originalIndex = sheet.getIndex();
+  var sheetName = sheet.getName();
+  var maxCols = Math.max(sheet.getLastColumn(), 11);
+
+  var tempSheet = ss.insertSheet(sheetName + "_Clean", originalIndex);
+
+  sheet.getRange(1, 1, CONFIG.HEADER_ROW, maxCols).copyTo(tempSheet.getRange(1, 1));
+
+  for (var col = 1; col <= maxCols; col++) {
+    tempSheet.setColumnWidth(col, sheet.getColumnWidth(col));
+  }
+
+  if (tempSheet.getMaxRows() < 100) {
+    tempSheet.insertRowsAfter(tempSheet.getMaxRows(), 50);
+  }
+
+  ss.deleteSheet(sheet);
+  tempSheet.setName(sheetName);
+
+  SpreadsheetApp.flush();
+
+  if (ui) {
+    ui.alert("Selesai", "Seluruh baris data dan foto berhasil dibersihkan secara bersamaan!", ui.ButtonSet.OK);
+  }
+  return "Berhasil dibersihkan";
+}
+
+/**
  * Dispatcher penanganan request admin dari Web App / Vercel
  */
 function handleAdminAction(body) {
@@ -1090,6 +1284,10 @@ function handleAdminAction(body) {
     return performCutOff(body.rowCount, pin);
   } else if (subAction === "realignPhotos" || subAction === "cleanStackedPhotos") {
     return realignStackedPhotos();
+  } else if (subAction === "cleanBackupData" || subAction === "cleanBackupContent") {
+    return cleanBackupFileDataAndPhotos();
+  } else if (subAction === "deleteBackupFile" || subAction === "deleteBackup") {
+    return deleteBackupFile();
   } else {
     return { success: false, message: "Sub-aksi admin '" + subAction + "' tidak dikenali." };
   }
