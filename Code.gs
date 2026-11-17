@@ -1268,25 +1268,26 @@ function clearSheetDataAndPhotos() {
  */
 function handleAdminAction(body) {
   var pin = (body && (body.pin || body.adminPin)) || "";
-  var subAction = (body && (body.subAction || body.adminAction)) || "";
+  var subAction = String((body && (body.subAction || body.adminAction)) || "").trim();
+  var subActionLower = subAction.toLowerCase();
 
   if (CONFIG.ADMIN_PIN && String(pin).trim() !== String(CONFIG.ADMIN_PIN).trim()) {
     return { success: false, message: "PIN Admin tidak cocok. Akses ditolak." };
   }
 
-  if (subAction === "verifyPin") {
+  if (subActionLower === "verifypin") {
     return { success: true, message: "PIN Admin valid." };
-  } else if (subAction === "getAdminStats" || subAction === "stats") {
+  } else if (subActionLower === "getadminstats" || subActionLower === "stats") {
     return getAdminStats(pin);
-  } else if (subAction === "backup") {
+  } else if (subActionLower === "backup") {
     return performBackup();
-  } else if (subAction === "cutOff") {
+  } else if (subActionLower === "cutoff") {
     return performCutOff(body.rowCount, pin);
-  } else if (subAction === "realignPhotos" || subAction === "cleanStackedPhotos") {
+  } else if (subActionLower === "realignphotos" || subActionLower === "cleanstackedphotos") {
     return realignStackedPhotos();
-  } else if (subAction === "cleanBackupData" || subAction === "cleanBackupContent") {
+  } else if (subActionLower === "cleanbackupdata" || subActionLower === "cleanbackupcontent" || subActionLower === "cleanbackup") {
     return cleanBackupFileDataAndPhotos();
-  } else if (subAction === "deleteBackupFile" || subAction === "deleteBackup") {
+  } else if (subActionLower === "deletebackupfile" || subActionLower === "deletebackup") {
     return deleteBackupFile();
   } else {
     return { success: false, message: "Sub-aksi admin '" + subAction + "' tidak dikenali." };
